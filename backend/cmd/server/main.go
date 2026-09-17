@@ -1,4 +1,3 @@
-// Command server runs the checkbox detection HTTP API.
 package main
 
 import (
@@ -13,6 +12,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/panchoseijas/homevision/backend/internal/httpapi"
 )
 
 const (
@@ -37,7 +38,6 @@ func main() {
 		os.Exit(1)
 	}
 }
-
 
 func run(ctx context.Context, addr string, logger *slog.Logger) error {
 	server := newServer(addr)
@@ -72,13 +72,10 @@ func run(ctx context.Context, addr string, logger *slog.Logger) error {
 	return nil
 }
 
-
 func newServer(addr string) *http.Server {
-	mux := http.NewServeMux()
-
 	return &http.Server{
 		Addr:         addr,
-		Handler:      mux,
+		Handler:      httpapi.New(),
 		ReadTimeout:  readTimeout,
 		WriteTimeout: writeTimeout,
 		IdleTimeout:  idleTimeout,

@@ -6,17 +6,26 @@ import (
 	"testing"
 )
 
-func TestNewServerHasNoRoutes(t *testing.T) {
+func TestNewServerRoutesDetect(t *testing.T) {
 	server := newServer(":0")
 
-	for _, path := range []string{"/", "/detect", "/healthz"} {
+	tests := []struct {
+		method     string
+		path       string
+		wantStatus int
+	}{
+		{http.MethodPost, "/detect", http.StatusBadRequest},
+		{http.MethodGet, "/", http.StatusNotFound},
+	}
+
+	for _, tt := range tests {
 		recorder := httptest.NewRecorder()
-		request := httptest.NewRequest(http.MethodGet, path, nil)
+		request := httptest.NewRequest(tt.method, tt.path, nil)
 
 		server.Handler.ServeHTTP(recorder, request)
 
-		if recorder.Code != http.StatusNotFound {
-			t.Errorf("GET %s: status = %d, want %d", path, recorder.Code, http.StatusNotFound)
+		if recorder.Code != tt.wantStatus {
+			t.Errorf("%s %s: status = %d, want %d", tt.method, tt.path, recorder.Code, tt.wantStatus)
 		}
 	}
 }
