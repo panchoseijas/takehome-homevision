@@ -10,10 +10,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
 	"github.com/panchoseijas/homevision/backend/internal/httpapi"
+	"github.com/panchoseijas/homevision/backend/internal/vision"
 )
 
 const (
@@ -26,6 +28,7 @@ const (
 
 func main() {
 	addr := flag.String("addr", defaultAddr, "TCP address for the HTTP server to listen on")
+	maxConcurrent := flag.Int("max-concurrent", runtime.GOMAXPROCS(0), "maximum detections running at once")
 	flag.Parse()
 
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
@@ -33,14 +36,14 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	if err := run(ctx, *addr, logger); err != nil {
+	if err := run(ctx, *addr, *maxConcurrent, logger); err != nil {
 		logger.Error("server exited with error", "error", err)
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context, addr string, logger *slog.Logger) error {
-	server := newServer(addr)
+func run(ctx context.Context, addr string, maxConcurrent int, logger *slog.Logger) error {
+	server := newServer(addr, maxConcurrent, logger)
 
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -72,10 +75,16 @@ func run(ctx context.Context, addr string, logger *slog.Logger) error {
 	return nil
 }
 
-func newServer(addr string) *http.Server {
+func newServer(addr string, maxConcurrent int, logger *slog.Logger) *http.Server {
+	params := vision.DefaultParams()
+	handler := httpapi.New(vision.NewDetector(params), httpapi.Config{
+		MaxPixels:     params.MaxPixels,
+		MaxConcurrent: maxConcurrent,
+		Logger:        logger,
+	})
 	return &http.Server{
 		Addr:         addr,
-		Handler:      httpapi.New(),
+		Handler:      handler,
 		ReadTimeout:  readTimeout,
 		WriteTimeout: writeTimeout,
 		IdleTimeout:  idleTimeout,

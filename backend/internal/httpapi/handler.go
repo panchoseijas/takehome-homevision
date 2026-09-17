@@ -1,30 +1,93 @@
+// Package httpapi exposes the checkbox detector over HTTP. It owns upload
+// validation, request limits, and the JSON contract; image processing lives in
+// the vision package.
 package httpapi
 
 import (
-	"encoding/json"
+	"context"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
-	"strings"
+	"runtime"
+	"strconv"
+	"time"
+
+	"github.com/panchoseijas/homevision/backend/internal/vision"
 )
 
-const maxUploadBytes = 20 << 20
+// Detector is the part of vision.Detector the API depends on.
+type Detector interface {
+	Detect(ctx context.Context, data []byte) ([]vision.Box, error)
+}
 
-func New() http.Handler {
+// Config bounds the work a request may cause. Zero values select the defaults.
+type Config struct {
+	// MaxUploadBytes caps the multipart request body.
+	MaxUploadBytes int64
+	// MaxPixels caps the decoded image area, checked from the header before
+	// the detector runs. It should match the detector's own limit.
+	MaxPixels int
+	// MaxConcurrent caps detections running at once; further requests wait up
+	// to QueueTimeout and then receive 503.
+	MaxConcurrent int
+	QueueTimeout  time.Duration
+	Logger        *slog.Logger
+}
+
+const (
+	defaultMaxUploadBytes = 20 << 20
+	defaultQueueTimeout   = 5 * time.Second
+)
+
+func (c Config) withDefaults() Config {
+	if c.MaxUploadBytes <= 0 {
+		c.MaxUploadBytes = defaultMaxUploadBytes
+	}
+	if c.MaxPixels <= 0 {
+		c.MaxPixels = vision.DefaultParams().MaxPixels
+	}
+	if c.MaxConcurrent <= 0 {
+		c.MaxConcurrent = runtime.GOMAXPROCS(0)
+	}
+	if c.QueueTimeout <= 0 {
+		c.QueueTimeout = defaultQueueTimeout
+	}
+	if c.Logger == nil {
+		c.Logger = slog.Default()
+	}
+	return c
+}
+
+type server struct {
+	detector Detector
+	config   Config
+	slots    chan struct{}
+}
+
+// New returns the API handler: POST /detect and GET /healthz.
+func New(detector Detector, config Config) http.Handler {
+	config = config.withDefaults()
+	s := &server{
+		detector: detector,
+		config:   config,
+		slots:    make(chan struct{}, config.MaxConcurrent),
+	}
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /detect", handleDetect)
+	mux.HandleFunc("POST /detect", s.handleDetect)
+	mux.HandleFunc("GET /healthz", handleHealthz)
 	return mux
 }
 
-type detectResponse struct {
-	Received string `json:"received"`
-	Bytes    int    `json:"bytes"`
+func handleHealthz(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-func handleDetect(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, maxUploadBytes)
+func (s *server) handleDetect(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, s.config.MaxUploadBytes)
 
-	file, header, err := r.FormFile("image")
+	file, _, err := r.FormFile("image")
 	if err != nil {
 		status, message := uploadErrorStatus(err)
 		writeError(w, status, message)
@@ -37,12 +100,67 @@ func handleDetect(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "could not read uploaded file")
 		return
 	}
-	if !strings.HasPrefix(http.DetectContentType(data), "image/") {
-		writeError(w, http.StatusUnsupportedMediaType, "uploaded file is not an image")
+
+	// Header-only validation runs before a slot is taken so malformed uploads
+	// never queue behind real work.
+	if _, err := vision.ValidateImage(data, s.config.MaxPixels); err != nil {
+		status, message := detectErrorStatus(err)
+		writeError(w, status, message)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, detectResponse{Received: header.Filename, Bytes: len(data)})
+	release, ok := s.acquireSlot(r.Context())
+	if !ok {
+		if r.Context().Err() != nil {
+			return // client went away while waiting
+		}
+		w.Header().Set("Retry-After", strconv.Itoa(int(s.config.QueueTimeout/time.Second)))
+		writeError(w, http.StatusServiceUnavailable, "server is busy, retry shortly")
+		return
+	}
+	defer release()
+
+	started := time.Now()
+	boxes, err := s.detector.Detect(r.Context(), data)
+	if err != nil {
+		if r.Context().Err() != nil {
+			return
+		}
+		status, message := detectErrorStatus(err)
+		if status == http.StatusInternalServerError {
+			s.config.Logger.Error("detection failed", "error", err)
+		}
+		writeError(w, status, message)
+		return
+	}
+	s.config.Logger.Info("detection complete", "boxes", len(boxes), "bytes", len(data), "duration", time.Since(started))
+
+	writeJSON(w, http.StatusOK, NewDetectResponse(boxes, wantsDebug(r)))
+}
+
+// acquireSlot blocks until a detection slot is free, the context ends, or
+// QueueTimeout passes. The returned release must be called when ok is true.
+func (s *server) acquireSlot(ctx context.Context) (release func(), ok bool) {
+	timer := time.NewTimer(s.config.QueueTimeout)
+	defer timer.Stop()
+
+	select {
+	case s.slots <- struct{}{}:
+		return func() { <-s.slots }, true
+	case <-ctx.Done():
+		return nil, false
+	case <-timer.C:
+		return nil, false
+	}
+}
+
+// wantsDebug reports whether the request opted into per-box diagnostics.
+func wantsDebug(r *http.Request) bool {
+	switch r.URL.Query().Get("debug") {
+	case "1", "true":
+		return true
+	}
+	return false
 }
 
 func uploadErrorStatus(err error) (int, string) {
@@ -59,16 +177,15 @@ func uploadErrorStatus(err error) (int, string) {
 	}
 }
 
-type errorResponse struct {
-	Error string `json:"error"`
-}
-
-func writeError(w http.ResponseWriter, status int, message string) {
-	writeJSON(w, status, errorResponse{Error: message})
-}
-
-func writeJSON(w http.ResponseWriter, status int, body any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(body)
+func detectErrorStatus(err error) (int, string) {
+	switch {
+	case errors.Is(err, vision.ErrUnsupportedFormat):
+		return http.StatusUnsupportedMediaType, "uploaded file must be a PNG or JPEG image"
+	case errors.Is(err, vision.ErrTooLarge):
+		return http.StatusRequestEntityTooLarge, "image dimensions exceed the supported size"
+	case errors.Is(err, vision.ErrCorrupt):
+		return http.StatusBadRequest, "image could not be decoded"
+	default:
+		return http.StatusInternalServerError, "detection failed"
+	}
 }

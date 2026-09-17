@@ -1,13 +1,14 @@
 package main
 
 import (
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-func TestNewServerRoutesDetect(t *testing.T) {
-	server := newServer(":0")
+func TestNewServerRoutes(t *testing.T) {
+	server := newServer(":0", 1, slog.New(slog.DiscardHandler))
 
 	tests := []struct {
 		method     string
@@ -15,6 +16,7 @@ func TestNewServerRoutesDetect(t *testing.T) {
 		wantStatus int
 	}{
 		{http.MethodPost, "/detect", http.StatusBadRequest},
+		{http.MethodGet, "/healthz", http.StatusOK},
 		{http.MethodGet, "/", http.StatusNotFound},
 	}
 
