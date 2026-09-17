@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url("/fonts/inter-regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 550 700;
+  font-display: swap;
+  src: url("/fonts/inter-semibold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 750 900;
+  font-display: swap;
+  src: url("/fonts/inter-extrabold.ttf") format("truetype");
+}
+
+@theme {
+  --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --spacing: 4px;
+}
+
+@layer base {
+  :root {
+    font-size: 14px;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply min-w-80 bg-white font-sans leading-normal text-[#18181b] antialiased;
+  }
+
+  button,
+  a,
+  input {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button {
+    @apply cursor-pointer transition-colors duration-150 disabled:cursor-not-allowed;
+  }
+
+  button:focus-visible,
+  a:focus-visible {
+    @apply outline-3 outline-offset-4 outline-[#6366f1];
+  }
+}
+
+@layer components {
+  .page-shell {
+    min-height: 100svh;
+    border-top: 5px solid #4f46e5;
+    background:
+      url("/homevision-background.avif") center 80px / auto 460px no-repeat,
+      linear-gradient(#f8f9fc, #f8f9fc) 0 80px / 100% 460px no-repeat;
+  }
+
+  .site-header,
+  .workspace-main,
+  .site-footer {
+    width: min(100% - 96px, 1144px);
+    margin-inline: auto;
+  }
+
+  .site-header {
+    @apply flex h-20 items-center justify-between;
+  }
+
+  .workspace-label {
+    @apply rounded-lg border border-[#e4e4e7] bg-white px-4 py-2 text-xs font-semibold text-[#52525b];
+  }
+
+  .workspace-main {
+    padding-block: 64px 56px;
+    background-image: linear-gradient(to right, #e4e4ed66 1px, transparent 1px);
+    background-size: 25% 100%;
+  }
+
+  .workspace-intro {
+    max-width: 740px;
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .hero-title {
+    font-size: clamp(36px, 4.6vw, 56px);
+    line-height: 1.1;
+    font-weight: 800;
+    letter-spacing: -2.5px;
+  }
+
+  .preview-canvas {
+    background-image: radial-gradient(#c7d2fe80 0.8px, transparent 0.8px);
+    background-size: 16px 16px;
+  }
+
+  .site-footer {
+    @apply flex flex-wrap justify-between gap-4 border-t border-[#e4e4e7] py-6 text-[11px] text-[#71717a];
+  }
+
+  @media (max-width: 760px) {
+    .site-header,
+    .workspace-main,
+    .site-footer {
+      width: calc(100% - 40px);
+    }
+
+    .workspace-main {
+      padding-block: 44px 36px;
+      background-size: 50% 100%;
+    }
+
+    .hero-title {
+      letter-spacing: -1.5px;
+    }
+
+    .workspace-label {
+      padding: 8px 10px;
+      font-size: 10px;
+    }
+  }
+}
