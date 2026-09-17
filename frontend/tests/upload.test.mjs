@@ -48,6 +48,20 @@ test("handles HTTP, network, and malformed response failures", async (t) => {
   await assert.rejects(imageService.uploadImage(image), (error) => {
     assert.ok(error instanceof ApiValidationError);
     assert.equal(error.status, 413);
+    assert.equal(error.message, "Request failed (HTTP 413)");
+    return true;
+  });
+  fetchMock.mock.mockImplementation(
+    async () =>
+      Response.json(
+        { error: "uploaded file must be a PNG or JPEG image" },
+        { status: 415 },
+      ),
+  );
+  await assert.rejects(imageService.uploadImage(image), (error) => {
+    assert.ok(error instanceof ApiValidationError);
+    assert.equal(error.status, 415);
+    assert.equal(error.message, "uploaded file must be a PNG or JPEG image");
     return true;
   });
   fetchMock.mock.mockImplementation(async () => {
