@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   boxFromDrag,
+  fitScale,
   serializeTruth,
   truthFileName,
 } from "../src/annotation.ts";
@@ -21,6 +22,16 @@ test("turns a drag in any direction into a clamped integer box", () => {
 
 test("ignores drags too small to be a checkbox", () => {
   assert.equal(boxFromDrag({ x: 10, y: 10 }, { x: 12, y: 40 }, size), null);
+});
+
+test("fits the image inside the padded stage, then multiplies by zoom", () => {
+  const page = { width: 2000, height: 3000 };
+  const stage = { width: 1000, height: 800 };
+  // Height is the tighter constraint: (800 - 32) / 3000.
+  assert.equal(fitScale(page, stage, 1, 16), 0.256);
+  assert.equal(fitScale(page, stage, 4, 16), 1.024);
+  // A stage narrower than its own padding still yields a usable scale.
+  assert.ok(fitScale(page, { width: 10, height: 10 }, 1, 16) > 0);
 });
 
 test("names the truth file after the image", () => {

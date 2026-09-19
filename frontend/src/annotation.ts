@@ -1,9 +1,8 @@
-import type { ImageSize } from "./components/BoxOverlay.tsx";
 import type { DetectedBox } from "./detection.ts";
 
 export type AnnotatedBox = DetectedBox & { ambiguous?: boolean };
 
-export type TruthFile = { boxes: AnnotatedBox[] };
+export type ImageSize = { width: number; height: number };
 
 export type Point = { x: number; y: number };
 
@@ -24,6 +23,17 @@ export function boxFromDrag(
   const y2 = clampY(Math.max(start.y, end.y));
   if (x2 - x1 < MIN_BOX_SIDE || y2 - y1 < MIN_BOX_SIDE) return null;
   return [x1, y1, x2, y2];
+}
+
+export function fitScale(
+  image: ImageSize,
+  viewport: ImageSize,
+  zoom: number,
+  padding: number,
+): number {
+  const width = Math.max(viewport.width - 2 * padding, 1);
+  const height = Math.max(viewport.height - 2 * padding, 1);
+  return zoom * Math.min(width / image.width, height / image.height);
 }
 
 export function truthFileName(imageName: string): string {
