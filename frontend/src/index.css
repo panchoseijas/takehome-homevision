@@ -37,7 +37,7 @@
   }
 
   body {
-    @apply min-w-80 bg-white font-sans leading-normal text-[#18181b] antialiased;
+    @apply min-w-80 bg-[#e9ecf6] font-sans leading-normal text-[#18181b] antialiased;
   }
 
   button,
@@ -62,7 +62,8 @@
     border-top: 5px solid #4f46e5;
     background:
       url("/homevision-background.avif") center 80px / auto 460px no-repeat,
-      linear-gradient(#f8f9fc, #f8f9fc) 0 80px / 100% 460px no-repeat;
+      radial-gradient(1200px 540px at 50% 140px, #ffffffd9, #ffffff00 72%),
+      linear-gradient(180deg, #f2f4fb, #e9ecf6);
   }
 
   .site-header,

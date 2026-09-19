@@ -55,7 +55,7 @@ export class ApiService {
     if (response.status >= 400) {
       const error = await this.readError(response);
       throw new ApiValidationError(
-        error.message ?? `Request failed (HTTP ${response.status})`,
+        error.error ?? `Request failed (HTTP ${response.status})`,
         error.field,
         response.status,
       );
@@ -65,12 +65,13 @@ export class ApiService {
     return response.json() as Promise<T>;
   }
 
+  // The backend reports failures as {"error": "message"}.
   private async readError(
     response: Response,
-  ): Promise<{ message?: string; field?: string }> {
+  ): Promise<{ error?: string; field?: string }> {
     return response
       .json()
-      .then((body) => body as { message?: string; field?: string })
+      .then((body) => body as { error?: string; field?: string })
       .catch(() => ({}));
   }
 }
