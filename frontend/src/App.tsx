@@ -65,6 +65,7 @@ function App() {
         <ImagePreview
           file={file}
           preview={preview}
+          boxes={mutation.data?.boxes ?? null}
           onPreviewError={() => {
             clearSelection();
             setValidationError(

@@ -112,9 +112,6 @@ export default function DocumentUpload({
         {isPending ? "Uploading…" : "Upload image"}
         <span aria-hidden="true">→</span>
       </button>
-      <p className="mt-3.5 text-center text-[11px] text-[#71717a]">
-        Your image is sent only when you click upload.
-      </p>
       <div aria-live="polite" aria-atomic="true">
         {isPending && (
           <p className="mt-4 rounded-md bg-[#eef2ff] p-3 text-xs leading-[1.6]">

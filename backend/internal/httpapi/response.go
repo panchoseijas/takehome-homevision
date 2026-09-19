@@ -2,21 +2,16 @@ package httpapi
 
 import "github.com/panchoseijas/takehome-homevision/backend/internal/vision"
 
-// DetectResponse is the JSON body of a successful POST /detect.
 type DetectResponse struct {
 	Boxes []BoxResponse `json:"boxes"`
 }
 
-// BoxResponse is one detected checkbox. BBox is [x1, y1, x2, y2] in pixels of
-// the uploaded image, origin top-left, with exclusive right and bottom edges.
-// Debug is only populated when the request asked for ?debug=1.
 type BoxResponse struct {
 	BBox      [4]int         `json:"bbox"`
 	IsChecked bool           `json:"is_checked"`
 	Debug     *DebugResponse `json:"debug,omitempty"`
 }
 
-// DebugResponse mirrors vision.Debug with JSON field names.
 type DebugResponse struct {
 	FillRatio    float64 `json:"fill_ratio"`
 	InkPixels    int     `json:"ink_pixels"`
@@ -24,8 +19,6 @@ type DebugResponse struct {
 	BorderPx     [4]int  `json:"border_px"`
 }
 
-// NewDetectResponse converts detector output to the wire format. An empty
-// result encodes as {"boxes":[]} rather than null.
 func NewDetectResponse(boxes []vision.Box, includeDebug bool) DetectResponse {
 	response := DetectResponse{Boxes: make([]BoxResponse, 0, len(boxes))}
 	for _, box := range boxes {

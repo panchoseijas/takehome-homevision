@@ -1,14 +1,48 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { DetectedBox } from "../detection";
+import BoxOverlay, { type ImageSize } from "./BoxOverlay";
 
 type ImageViewerProps = {
   src: string;
   name: string;
+  boxes: DetectedBox[];
+  size: ImageSize | null;
   onClose: () => void;
 };
 
-export default function ImageViewer({ src, name, onClose }: ImageViewerProps) {
+export default function ImageViewer({
+  src,
+  name,
+  boxes,
+  size,
+  onClose,
+}: ImageViewerProps) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const viewport = useRef<HTMLDivElement>(null);
+  const content = useRef<HTMLDivElement>(null);
+  const focus = useRef({ x: 0.5, y: 0.5 });
   const [zoomed, setZoomed] = useState(false);
+
+  useLayoutEffect(() => {
+    const view = viewport.current;
+    const inner = content.current;
+    if (!view || !inner) return;
+    const viewRect = view.getBoundingClientRect();
+    const innerRect = inner.getBoundingClientRect();
+    view.scrollLeft +=
+      innerRect.left +
+      focus.current.x * innerRect.width -
+      (viewRect.left + view.clientWidth / 2);
+    view.scrollTop +=
+      innerRect.top +
+      focus.current.y * innerRect.height -
+      (viewRect.top + view.clientHeight / 2);
+  }, [zoomed]);
+
+  function toggleZoom(x = 0.5, y = 0.5) {
+    focus.current = { x, y };
+    setZoomed(!zoomed);
+  }
 
   useEffect(() => {
     const element = dialog.current;
@@ -37,7 +71,7 @@ export default function ImageViewer({ src, name, onClose }: ImageViewerProps) {
             type="button"
             className="shrink-0 rounded-md bg-white/10 px-4 py-2 text-sm hover:bg-white/20"
             aria-pressed={zoomed}
-            onClick={() => setZoomed(!zoomed)}
+            onClick={() => toggleZoom()}
           >
             {zoomed ? "Fit to screen" : "Zoom in"}
           </button>
@@ -51,19 +85,33 @@ export default function ImageViewer({ src, name, onClose }: ImageViewerProps) {
           </button>
         </div>
         <div
+          ref={viewport}
           className="min-h-0 flex-1 overflow-auto p-4"
           tabIndex={0}
-          aria-label="Image; scroll to explore when zoomed"
+          aria-label="Image; double-click to zoom, scroll to explore when zoomed"
         >
-          <img
+          <div
+            ref={content}
             className={
               zoomed
-                ? "h-[200%] w-[200%] max-w-none object-contain"
-                : "h-full w-full object-contain"
+                ? "relative h-[200%] w-[200%] cursor-zoom-out"
+                : "relative h-full w-full cursor-zoom-in"
             }
-            src={src}
-            alt={name}
-          />
+            onDoubleClick={(event) => {
+              const rect = event.currentTarget.getBoundingClientRect();
+              toggleZoom(
+                (event.clientX - rect.left) / rect.width,
+                (event.clientY - rect.top) / rect.height,
+              );
+            }}
+          >
+            <img
+              className="h-full w-full object-contain"
+              src={src}
+              alt={name}
+            />
+            {size && <BoxOverlay boxes={boxes} size={size} interactive />}
+          </div>
         </div>
       </div>
     </dialog>

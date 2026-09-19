@@ -1,6 +1,3 @@
-// Command detect runs the checkbox detector on one image file and prints the
-// same JSON that POST /detect returns. With -overlay it also writes a PNG with
-// the boxes drawn on the original image (green: checked, red: unchecked).
 package main
 
 import (
