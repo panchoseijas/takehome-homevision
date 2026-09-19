@@ -83,3 +83,11 @@ The frontend's `ApiService.readError` read a `message` field, so it was changed 
 - Hand-drawn marks beside a box rather than inside it, such as the quadrilateral next to "Water, Other" in sample 2, are not checkboxes and are ignored.
 - Skewed or rotated scans reduce the straight-run mask; the supported skew range has not been measured yet.
 - Thresholds were set by inspecting the four samples and have not been evaluated on held-out documents.
+
+## D11. Ground truth and evaluation
+
+Options for defining the correct result of an image: compare against a stored copy of the detector's own output (a regression check, not a measure of accuracy); annotate every box by hand in an external tool; or correct a detector draft in a purpose-built editor.
+
+Chosen: the third. The correct result is a person's judgment under the mark classification policy in `docs/plan.md`, stored as `<image>.truth.json` in the `/detect` shape plus an `ambiguous` flag. The frontend's `/annotate` page seeds the file from the detector and the annotator deletes false positives, flips states, and draws missed boxes. `cmd/eval` matches predictions to annotations one-to-one at IoU 0.5 and reports localization precision/recall, state accuracy, and end-to-end F1; it also accepts `/detect`-shaped JSON files so alternatives outside this codebase are scored identically.
+
+Cost and caveats: a draft biases the annotator toward the current detector. Coordinates do not matter at IoU 0.5, but boxes the detector misses are absent from the draft and must be looked for deliberately. Ambiguous boxes accept either state rather than being scored twice. The four challenge samples tuned the thresholds, so their score is a regression signal; the pages under `testdata/additional` are the held-out set. With roughly 300 boxes in total, a difference of one or two boxes between alternatives is noise.

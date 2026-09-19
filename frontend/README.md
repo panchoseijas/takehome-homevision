@@ -22,6 +22,16 @@ After a successful upload, every box from the `POST /detect` response is drawn o
 
 The overlay is an SVG whose `viewBox` is the image's pixel grid, so `bbox` coordinates are used as-is and stay aligned at any display size or zoom level. `src/detection.ts` types the `{ boxes: [{ bbox: [x1, y1, x2, y2], is_checked }] }` contract; the raw JSON remains visible under "Endpoint response".
 
+## Annotation editor
+
+`/annotate` builds the ground-truth files that `backend/cmd/eval` scores against. Choose an image from `backend/testdata`, press "Draft from detector" (or "Load annotations" to reopen a saved file), then correct the draft:
+
+- click a box to select it; `C` or Space toggles checked, `A` toggles ambiguous, Delete removes it, Escape deselects;
+- drag on the page to add a box the detector missed. Matching uses IoU 0.5, so a drawn box only has to be roughly right; to fix a misplaced one, delete it and draw it again;
+- use 2× or 4× zoom on full pages, and look for checkboxes with no rectangle on them, since a draft can never contain the detector's own misses.
+
+"Save" downloads `<image name>.truth.json`; move it beside the image in `backend/testdata`. The page is a second entry chosen from `window.location.pathname` in `src/main.tsx`; two pages did not justify a router dependency.
+
 ## API service
 
 `src/services/api.service.ts` provides the generic `ApiService` class with `get`, `post`, `put`, and `delete` methods. `src/services/image.service.ts` owns the image-specific multipart request, so the UI only calls `imageService.uploadImage(file)`. TanStack Query manages request state, and `src/upload.ts` contains local file validation.
