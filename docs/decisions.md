@@ -8,7 +8,7 @@ Options: GoCV bindings to OpenCV; a pure Go implementation on the standard libra
 
 Chosen: GoCV, as the plan proposed. OpenCV supplies adaptive thresholding, morphology, and contour extraction with well-known semantics, so the detector is a short pipeline of named operations rather than hand-written image loops that would themselves need validation. Pure Go would remove the native dependency but replace it with a few hundred lines of custom code for the same primitives; a sidecar would split the service across two runtimes for one endpoint.
 
-Cost: a native dependency. Reviewers need OpenCV installed to build, and GoCV releases are tied to OpenCV versions. GoCV v0.43.0 documents OpenCV 4.12/4.13; the build here was verified against Homebrew OpenCV 4.14.0 (`gocv.OpenCVVersion()` reports `4.14.0`, all tests pass). The version is pinned in `go.mod`, and a container image remains the fallback reviewer path for the packaging step.
+Cost: a native dependency. Building requires OpenCV installed on the host, and GoCV releases are tied to OpenCV versions. GoCV v0.43.0 documents OpenCV 4.12/4.13; the build here was verified against Homebrew OpenCV 4.14.0 (`gocv.OpenCVVersion()` reports `4.14.0`, all tests pass). The version is pinned in `go.mod`, and a container image remains the fallback run path for the packaging step.
 
 ## D2. Binarization: adaptive Gaussian threshold
 

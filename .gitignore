@@ -6,3 +6,6 @@
 
 # Submission archive
 *.zip
+
+# Third-party Go agent skills (samber/cc-skills-golang), installed locally
+.claude/skills/

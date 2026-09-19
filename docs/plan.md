@@ -39,13 +39,13 @@ The challenge explicitly says perfect accuracy is not expected. It specifies no 
 
 `cmd/server` will assemble the API server and detector. `internal/vision` will own image processing independently of HTTP. Add `internal/httpapi` when implementing upload validation, handlers, and JSON responses. Keep Go tests beside the packages they exercise and sample images/annotations under `backend/testdata`.
 
-Organize frontend code around the upload-and-inspect flow as it develops. Keep its API types and request helper in the frontend; a shared cross-language package is unnecessary for this small contract. Use one Go module in `backend` and one JavaScript package in `frontend`. Add root run commands if they simplify reviewer setup.
+Organize frontend code around the upload-and-inspect flow as it develops. Keep its API types and request helper in the frontend; a shared cross-language package is unnecessary for this small contract. Use one Go module in `backend` and one JavaScript package in `frontend`. Add root run commands if they simplify setup.
 
 ## Selected technology
 
 1. Frontend: React + Vite + TypeScript.
 2. Backend: Go, with GoCV/OpenCV for the initial classical computer vision implementation.
-3. Reviewer setup: plan a reproducible Docker run path for the backend to package the native OpenCV dependency. Validate compatible GoCV/OpenCV versions and the container build early.
+3. Reproducible setup: plan a Docker run path for the backend to package the native OpenCV dependency. Validate compatible GoCV/OpenCV versions and the container build early.
 4. Frontend serving: use Vite's dev server for development and local review, with requests proxied to the separately running Go backend. Document the commands and ports for both processes. Keep frontend and backend builds independent.
 
 GoCV provides established image-processing primitives and reduces the amount of custom algorithm code to maintain and validate. Its native OpenCV dependency adds build and packaging work; that tradeoff is accepted for the initial approach.
@@ -89,7 +89,7 @@ The order below deliberately puts a working end-to-end app before accuracy work.
 ### 1. Establish the toolchain
 
 - Scaffold the React + Vite + TypeScript frontend and Go module only after the planning stage. Keep generated boilerplate in a separate commit from original work.
-- Pin compatible dependency versions and verify the backend can build and run through the intended reviewer setup, including GoCV and its native OpenCV dependency.
+- Pin compatible dependency versions and verify the backend can build and run through the documented setup, including GoCV and its native OpenCV dependency.
 - The four original embedded images from assignment pages 3–6 are already stored under `backend/testdata/` as the raw embedded bytes, without resampling. Their dimensions are 2550×4200, 1586×846, 2550×4200, and 2550×3301. Sample 2 is a lossy JPEG and must not be re-encoded. Do not substitute screenshots of PDF pages.
 
 ### 2. Build a first classical CV detector
@@ -135,11 +135,11 @@ The frontend's purpose is to make correctness easy to review. At the end of this
 - Test the HTTP contract, empty detections, malformed uploads, unsupported types, request limits, decoded-image limits, coordinate mapping, the default response having no `debug` fields, the `?debug=1` variant, `GET /healthz`, and frontend-to-backend proxy routing.
 - Exercise the actual upload → detection → overlay → JSON flow, including backend failure and replacement of the uploaded image.
 - Run formatting, static checks, frontend type checking/linting/build, Go tests/vet, and any configured integration tests. Confirm concurrent requests do not corrupt results or exhaust native resources within the documented limits.
-- Write a root README with prerequisites, exact build/run/test commands for the frontend and backend, their ports and proxy configuration, curl examples, supported inputs, and a short reviewer walkthrough. Record measured results, approach, dependency tradeoffs, observed limitations, and the list of `TODO(prod)` items in a concise writeup.
+- Write a root README with prerequisites, exact build/run/test commands for the frontend and backend, their ports and proxy configuration, curl examples, supported inputs, and a short usage walkthrough. Record measured results, approach, dependency tradeoffs, observed limitations, and the list of `TODO(prod)` items in a concise writeup.
 - Verify those instructions from a clean copy, inspect the zip contents, and exclude local dependencies, build output, credentials, and scratch files. Search for accidental chat artifacts and placeholder text before packaging.
 - Keep commits organized around scaffold, detector, API, frontend, evaluation, and final verification/documentation.
 
-Completion means the required API works, results have been measured honestly, important failures are understood, checks pass, and a reviewer can run and assess the submission using the included instructions. Any detector limitations must be distinguished from software defects and described with examples.
+Completion means the required API works, results have been measured honestly, important failures are understood, checks pass, and the project can be run and evaluated from the included instructions alone. Any detector limitations must be distinguished from software defects and described with examples.
 
 ## Sources
 
