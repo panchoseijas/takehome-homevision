@@ -20,7 +20,7 @@ Open the local URL printed by Vite (normally http://localhost:5173). Selection a
 
 After a successful upload, every box from the `POST /detect` response is drawn over the image, in the small preview and in the full-screen viewer. Checked boxes have a solid green outline and unchecked boxes a dashed red one, so the state does not depend on color alone; a legend shows the count of each. In the full-screen viewer, hovering a box shows its state and `bbox`.
 
-The overlay is an SVG whose `viewBox` is the image's pixel grid, so `bbox` coordinates are used as-is and stay aligned at any display size or zoom level. `src/detection.ts` reads the boxes and skips entries that do not match the `{ bbox: [x1, y1, x2, y2], is_checked }` contract; the raw JSON remains visible under "Endpoint response".
+The overlay is an SVG whose `viewBox` is the image's pixel grid, so `bbox` coordinates are used as-is and stay aligned at any display size or zoom level. `src/detection.ts` types the `{ boxes: [{ bbox: [x1, y1, x2, y2], is_checked }] }` contract; the raw JSON remains visible under "Endpoint response".
 
 ## API service
 

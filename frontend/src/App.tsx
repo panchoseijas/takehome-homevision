@@ -6,7 +6,6 @@ import ImagePreview from "./components/ImagePreview";
 import PageLayout from "./components/PageLayout";
 import WorkspaceIntro from "./components/WorkspaceIntro";
 import imageService from "./services/image.service";
-import { parseBoxes } from "./detection";
 import { validateImage } from "./upload";
 
 function App() {
@@ -66,7 +65,7 @@ function App() {
         <ImagePreview
           file={file}
           preview={preview}
-          boxes={mutation.isSuccess ? parseBoxes(mutation.data) : null}
+          boxes={mutation.data?.boxes ?? null}
           onPreviewError={() => {
             clearSelection();
             setValidationError(
