@@ -14,8 +14,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/panchoseijas/homevision/backend/internal/httpapi"
-	"github.com/panchoseijas/homevision/backend/internal/vision"
+	"github.com/panchoseijas/takehome-homevision/backend/internal/httpapi"
+	"github.com/panchoseijas/takehome-homevision/backend/internal/vision"
 )
 
 const (

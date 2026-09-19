@@ -1,6 +1,6 @@
 package httpapi
 
-import "github.com/panchoseijas/homevision/backend/internal/vision"
+import "github.com/panchoseijas/takehome-homevision/backend/internal/vision"
 
 // DetectResponse is the JSON body of a successful POST /detect.
 type DetectResponse struct {

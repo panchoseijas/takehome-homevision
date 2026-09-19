@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"image"
@@ -15,8 +16,8 @@ import (
 
 	"gocv.io/x/gocv"
 
-	"github.com/panchoseijas/homevision/backend/internal/httpapi"
-	"github.com/panchoseijas/homevision/backend/internal/vision"
+	"github.com/panchoseijas/takehome-homevision/backend/internal/httpapi"
+	"github.com/panchoseijas/takehome-homevision/backend/internal/vision"
 )
 
 func main() {
@@ -71,7 +72,7 @@ func writeOverlay(data []byte, boxes []vision.Box, path string) error {
 	}
 	defer img.Close()
 	if img.Empty() {
-		return fmt.Errorf("decode for overlay: empty image")
+		return errors.New("decode for overlay: empty image")
 	}
 
 	checked := color.RGBA{R: 0, G: 170, B: 0, A: 255}
@@ -89,7 +90,7 @@ func writeOverlay(data []byte, boxes []vision.Box, path string) error {
 	}
 
 	if ok := gocv.IMWrite(path, img); !ok {
-		return fmt.Errorf("write overlay %s", path)
+		return fmt.Errorf("write overlay %q", path)
 	}
 	return nil
 }

@@ -1,11 +1,5 @@
 package vision
 
-// Params holds every tunable constant of the detector. Sizes are in pixels of
-// the original image. The defaults target scanned or rendered US-letter forms
-// between roughly 100 and 300 DPI, which covers the supplied samples (checkbox
-// sides of about 20-40 px). They are deliberately absolute rather than relative
-// to the image width: sample 2 is a crop of a page, so width-relative sizing
-// would misjudge its scale.
 type Params struct {
 	// MaxPixels bounds the decoded image area (width*height) so a small upload
 	// cannot force the server to allocate very large native buffers.

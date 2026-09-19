@@ -5,17 +5,20 @@ Go HTTP API that detects checkboxes in a document image and reports whether each
 ## Prerequisites
 
 - Go 1.26 or newer.
-- OpenCV 4 with development headers, discoverable through `pkg-config`. GoCV v0.43.0 documents OpenCV 4.12/4.13; this project was built and tested against 4.14.0.
+- OpenCV **4** with development headers, discoverable through `pkg-config`. GoCV v0.43.0 documents OpenCV 4.12/4.13; this project was built and tested against 4.14.0. Homebrew's plain `opencv` formula is now 5.0, which GoCV v0.43.0 does not support, so macOS needs `opencv@4` specifically.
 
 macOS (Homebrew):
 
 ```sh
-brew install opencv pkg-config
+brew install opencv@4 pkgconf
+export PKG_CONFIG_PATH="$(brew --prefix opencv@4)/lib/pkgconfig"
 ```
 
-Debian/Ubuntu: follow the [GoCV installation guide](https://gocv.io/getting-started/linux/), which builds OpenCV from source with `make install`.
+`opencv@4` is keg-only, so Homebrew leaves `opencv4.pc` off the default `pkg-config` search path. The export supplies it and is needed in every shell that runs `go build`, `go test`, or `go run` here; add it to your shell profile, or run `brew link --force opencv@4` once instead. (`pkgconf` provides the `pkg-config` command; skip it if you already have one.)
 
-Check the toolchain before building:
+Debian/Ubuntu: follow the [GoCV installation guide](https://gocv.io/getting-started/linux/), which builds OpenCV 4 from source with `make install` and puts `opencv4.pc` on the default `pkg-config` search path, so no export is needed.
+
+Check the toolchain before building. This must print a 4.x version:
 
 ```sh
 pkg-config --modversion opencv4
@@ -27,7 +30,7 @@ The first `go build` compiles the GoCV cgo bindings and takes a few minutes; lat
 
 ```sh
 cd backend
-go build ./...
+go build ./...        # macOS: PKG_CONFIG_PATH must be set, see Prerequisites
 go vet ./...
 go test ./...
 go run ./cmd/server            # listens on :8080

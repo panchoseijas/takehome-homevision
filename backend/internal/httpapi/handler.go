@@ -1,6 +1,3 @@
-// Package httpapi exposes the checkbox detector over HTTP. It owns upload
-// validation, request limits, and the JSON contract; image processing lives in
-// the vision package.
 package httpapi
 
 import (
@@ -13,26 +10,19 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/panchoseijas/homevision/backend/internal/vision"
+	"github.com/panchoseijas/takehome-homevision/backend/internal/vision"
 )
 
-// Detector is the part of vision.Detector the API depends on.
 type Detector interface {
 	Detect(ctx context.Context, data []byte) ([]vision.Box, error)
 }
 
-// Config bounds the work a request may cause. Zero values select the defaults.
 type Config struct {
-	// MaxUploadBytes caps the multipart request body.
 	MaxUploadBytes int64
-	// MaxPixels caps the decoded image area, checked from the header before
-	// the detector runs. It should match the detector's own limit.
-	MaxPixels int
-	// MaxConcurrent caps detections running at once; further requests wait up
-	// to QueueTimeout and then receive 503.
-	MaxConcurrent int
-	QueueTimeout  time.Duration
-	Logger        *slog.Logger
+	MaxPixels      int
+	MaxConcurrent  int
+	QueueTimeout   time.Duration
+	Logger         *slog.Logger
 }
 
 const (
@@ -65,7 +55,6 @@ type server struct {
 	slots    chan struct{}
 }
 
-// New returns the API handler: POST /detect and GET /healthz.
 func New(detector Detector, config Config) http.Handler {
 	config = config.withDefaults()
 	s := &server{
@@ -101,8 +90,6 @@ func (s *server) handleDetect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Header-only validation runs before a slot is taken so malformed uploads
-	// never queue behind real work.
 	if _, err := vision.ValidateImage(data, s.config.MaxPixels); err != nil {
 		status, message := detectErrorStatus(err)
 		writeError(w, status, message)
@@ -133,13 +120,16 @@ func (s *server) handleDetect(w http.ResponseWriter, r *http.Request) {
 		writeError(w, status, message)
 		return
 	}
-	s.config.Logger.Info("detection complete", "boxes", len(boxes), "bytes", len(data), "duration", time.Since(started))
+	s.config.Logger.Info(
+		"detection complete",
+		"boxes", len(boxes),
+		"bytes", len(data),
+		"duration", time.Since(started),
+	)
 
 	writeJSON(w, http.StatusOK, NewDetectResponse(boxes, wantsDebug(r)))
 }
 
-// acquireSlot blocks until a detection slot is free, the context ends, or
-// QueueTimeout passes. The returned release must be called when ok is true.
 func (s *server) acquireSlot(ctx context.Context) (release func(), ok bool) {
 	timer := time.NewTimer(s.config.QueueTimeout)
 	defer timer.Stop()
@@ -154,7 +144,6 @@ func (s *server) acquireSlot(ctx context.Context) (release func(), ok bool) {
 	}
 }
 
-// wantsDebug reports whether the request opted into per-box diagnostics.
 func wantsDebug(r *http.Request) bool {
 	switch r.URL.Query().Get("debug") {
 	case "1", "true":

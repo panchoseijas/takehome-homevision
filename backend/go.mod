@@ -1,4 +1,4 @@
-module github.com/panchoseijas/homevision/backend
+module github.com/panchoseijas/takehome-homevision/backend
 
 go 1.26.5
 

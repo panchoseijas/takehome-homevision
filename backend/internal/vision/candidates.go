@@ -18,10 +18,10 @@ func (d *Detector) findCandidates(gray, ink, ruling gocv.Mat) []Box {
 	contours := gocv.FindContoursWithParams(ruling, &hierarchy, gocv.RetrievalCComp, gocv.ChainApproxSimple)
 	defer contours.Close()
 
-	var candidates []Box
-	for i := 0; i < contours.Size(); i++ {
-		// Hierarchy entries are [next, previous, firstChild, parent]; only
-		// holes have a parent.
+	candidates := []Box{}
+	for i := range contours.Size() {
+		// Hierarchy entries are [next, previous, firstChild, parent]
+		// only holes have a parent.
 		if hierarchy.GetVeciAt(0, i)[3] < 0 {
 			continue
 		}
@@ -58,15 +58,15 @@ func (d *Detector) findCandidates(gray, ink, ruling gocv.Mat) []Box {
 
 // plausibleInterior filters the hole before border measurement.
 func (d *Detector) plausibleInterior(interior image.Rectangle) bool {
-	return d.sidesWithin(interior, d.params.MinInteriorSide, d.params.MaxBoxSide)
+	return sidesWithin(interior, d.params.MinInteriorSide, d.params.MaxBoxSide)
 }
 
 // plausibleBox applies the documented size and aspect limits to the outer box.
 func (d *Detector) plausibleBox(outer image.Rectangle) bool {
-	return d.sidesWithin(outer, d.params.MinBoxSide, d.params.MaxBoxSide) && d.nearSquare(outer)
+	return sidesWithin(outer, d.params.MinBoxSide, d.params.MaxBoxSide) && d.nearSquare(outer)
 }
 
-func (d *Detector) sidesWithin(r image.Rectangle, minSide, maxSide int) bool {
+func sidesWithin(r image.Rectangle, minSide, maxSide int) bool {
 	w, h := r.Dx(), r.Dy()
 	return w >= minSide && h >= minSide && w <= maxSide && h <= maxSide
 }
@@ -142,8 +142,12 @@ func (d *Detector) onLightBackground(gray gocv.Mat, outer, bounds image.Rectangl
 // by (dx, dy), stopping at limit or the image edge. It returns at least 1
 // because a hole is by construction enclosed by at least one ruling pixel.
 func runLength(mask gocv.Mat, x, y, dx, dy, limit int) int {
+	inMask := func(x, y int) bool {
+		return x >= 0 && y >= 0 && x < mask.Cols() && y < mask.Rows()
+	}
+
 	count := 0
-	for count < limit && x >= 0 && y >= 0 && x < mask.Cols() && y < mask.Rows() && mask.GetUCharAt(y, x) != 0 {
+	for count < limit && inMask(x, y) && mask.GetUCharAt(y, x) != 0 {
 		count++
 		x += dx
 		y += dy
@@ -158,14 +162,8 @@ func runLength(mask gocv.Mat, x, y, dx, dy, limit int) int {
 // InteriorMargin from each edge. It reads the original binary image, not the
 // ruling mask, so X marks and ticks are visible.
 func (d *Detector) classify(ink gocv.Mat, interior image.Rectangle, debug *Debug) bool {
-	shorter := interior.Dx()
-	if interior.Dy() < shorter {
-		shorter = interior.Dy()
-	}
-	margin := int(math.Round(float64(shorter) * d.params.InteriorMargin))
-	if margin < 1 {
-		margin = 1
-	}
+	shorter := min(interior.Dx(), interior.Dy())
+	margin := max(int(math.Round(float64(shorter)*d.params.InteriorMargin)), 1)
 	trimmed := interior.Inset(margin)
 	if trimmed.Empty() {
 		trimmed = interior

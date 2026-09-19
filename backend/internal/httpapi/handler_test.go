@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/panchoseijas/homevision/backend/internal/vision"
+	"github.com/panchoseijas/takehome-homevision/backend/internal/vision"
 )
 
 // fakeDetector returns canned results and records what it received.
@@ -70,8 +70,8 @@ func encodePNG(t *testing.T, width, height int) []byte {
 func encodeJPEG(t *testing.T, width, height int) []byte {
 	t.Helper()
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
+	for y := range height {
+		for x := range width {
 			img.Set(x, y, color.White)
 		}
 	}
@@ -115,8 +115,15 @@ func decodeBody(t *testing.T, recorder *httptest.ResponseRecorder) map[string]an
 	return body
 }
 
+var sampleDebug = vision.Debug{
+	FillRatio:    0.25,
+	InkPixels:    100,
+	InteriorArea: 400,
+	BorderPx:     [4]int{2, 2, 2, 2},
+}
+
 var sampleBoxes = []vision.Box{
-	{X1: 10, Y1: 20, X2: 50, Y2: 60, Checked: true, Debug: vision.Debug{FillRatio: 0.25, InkPixels: 100, InteriorArea: 400, BorderPx: [4]int{2, 2, 2, 2}}},
+	{X1: 10, Y1: 20, X2: 50, Y2: 60, Checked: true, Debug: sampleDebug},
 	{X1: 100, Y1: 20, X2: 140, Y2: 60, Checked: false},
 }
 
@@ -171,8 +178,14 @@ func TestDetectDebugVariant(t *testing.T) {
 		if len(response.Boxes) != 2 || response.Boxes[0].Debug == nil || response.Boxes[1].Debug == nil {
 			t.Fatalf("%s: every box should carry debug: %s", target, recorder.Body)
 		}
-		if got := *response.Boxes[0].Debug; got != (DebugResponse{FillRatio: 0.25, InkPixels: 100, InteriorArea: 400, BorderPx: [4]int{2, 2, 2, 2}}) {
-			t.Errorf("%s: debug = %+v", target, got)
+		want := DebugResponse{
+			FillRatio:    sampleDebug.FillRatio,
+			InkPixels:    sampleDebug.InkPixels,
+			InteriorArea: sampleDebug.InteriorArea,
+			BorderPx:     sampleDebug.BorderPx,
+		}
+		if got := *response.Boxes[0].Debug; got != want {
+			t.Errorf("%s: debug = %+v, want %+v", target, got, want)
 		}
 	}
 
