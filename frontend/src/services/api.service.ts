@@ -65,7 +65,6 @@ export class ApiService {
     return response.json() as Promise<T>;
   }
 
-  // The backend reports failures as {"error": "message"}.
   private async readError(
     response: Response,
   ): Promise<{ error?: string; field?: string }> {

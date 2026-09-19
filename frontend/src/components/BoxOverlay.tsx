@@ -11,9 +11,6 @@ type BoxOverlayProps = {
   interactive?: boolean;
 };
 
-// The viewBox is the image's pixel grid, and the default preserveAspectRatio
-// (xMidYMid meet) matches a centered `object-contain` image, so bbox pixel
-// coordinates line up with the picture at any display size.
 export default function BoxOverlay({
   boxes,
   size,
