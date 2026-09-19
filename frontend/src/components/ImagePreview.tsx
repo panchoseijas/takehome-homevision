@@ -45,7 +45,7 @@ export default function ImagePreview({
         )}
       </div>
       <div
-        className={`preview-canvas flex h-full min-h-70 max-h-107.5 items-center justify-center rounded-lg border border-[#e4e4f0] bg-[#f8f9fc] min-[761px]:min-h-83.75 min-[900px]:flex-1 ${preview ? "p-4" : ""}`}
+        className={`flex h-full min-h-70 max-h-107.5 items-center justify-center rounded-lg border border-[#e4e4f0] bg-[#f8f9fc] bg-[image:radial-gradient(#c7d2fe80_0.8px,transparent_0.8px)] bg-size-[16px_16px] min-[761px]:min-h-83.75 min-[900px]:flex-1 ${preview ? "p-4" : ""}`}
       >
         {preview ? (
           <button
