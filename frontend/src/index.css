@@ -93,13 +93,6 @@
     text-align: center;
   }
 
-  .hero-title {
-    font-size: clamp(36px, 4.6vw, 56px);
-    line-height: 1.1;
-    font-weight: 800;
-    letter-spacing: -2.5px;
-  }
-
   .preview-canvas {
     background-image: radial-gradient(#c7d2fe80 0.8px, transparent 0.8px);
     background-size: 16px 16px;
@@ -119,10 +112,6 @@
     .workspace-main {
       padding-block: 44px 36px;
       background-size: 50% 100%;
-    }
-
-    .hero-title {
-      letter-spacing: -1.5px;
     }
 
     .workspace-label {
