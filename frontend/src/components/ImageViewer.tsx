@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { DetectedBox } from "../detection";
 import BoxOverlay, { type ImageSize } from "./BoxOverlay";
 
@@ -18,7 +18,17 @@ export default function ImageViewer({
   onClose,
 }: ImageViewerProps) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const viewport = useRef<HTMLDivElement>(null);
   const [zoomed, setZoomed] = useState(false);
+
+  // Zooming enlarges the content from the top-left corner, so re-center the
+  // scroll position to keep the middle of the image in view.
+  useLayoutEffect(() => {
+    const element = viewport.current;
+    if (!element) return;
+    element.scrollLeft = (element.scrollWidth - element.clientWidth) / 2;
+    element.scrollTop = (element.scrollHeight - element.clientHeight) / 2;
+  }, [zoomed]);
 
   useEffect(() => {
     const element = dialog.current;
@@ -61,6 +71,7 @@ export default function ImageViewer({
           </button>
         </div>
         <div
+          ref={viewport}
           className="min-h-0 flex-1 overflow-auto p-4"
           tabIndex={0}
           aria-label="Image; scroll to explore when zoomed"
