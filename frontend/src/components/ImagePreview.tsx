@@ -1,18 +1,34 @@
 import { useState } from "react";
+import type { DetectedBox } from "../detection";
+import BoxOverlay, {
+  CHECKED_COLOR,
+  UNCHECKED_COLOR,
+  type ImageSize,
+} from "./BoxOverlay";
 import ImageViewer from "./ImageViewer";
 
 type ImagePreviewProps = {
   file: File | null;
   preview: string;
+  boxes: DetectedBox[] | null;
+  debug: boolean;
+  onDebugChange: (debug: boolean) => void;
   onPreviewError: () => void;
 };
 
 export default function ImagePreview({
   file,
   preview,
+  boxes,
+  debug,
+  onDebugChange,
   onPreviewError,
 }: ImagePreviewProps) {
   const [expandedPreview, setExpandedPreview] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState<{ src: string; size: ImageSize }>();
+  const size = loaded?.src === preview ? loaded.size : null;
+  const visibleBoxes = debug && boxes ? boxes : [];
+  const checked = visibleBoxes.filter((box) => box.is_checked).length;
 
   return (
     <section
@@ -26,11 +42,15 @@ export default function ImagePreview({
         <h2 className="text-sm font-[650]" id="preview-heading">
           Image preview
         </h2>
-        {file && (
-          <span className="ml-auto text-[9px] tracking-[1px] text-[#71717a]">
-            ORIGINAL
-          </span>
-        )}
+        <label className="ml-auto flex cursor-pointer items-center gap-2 text-xs text-[#52525b]">
+          <input
+            type="checkbox"
+            className="accent-[#4f46e5]"
+            checked={debug}
+            onChange={(event) => onDebugChange(event.target.checked)}
+          />
+          Debug mode
+        </label>
       </div>
       <div
         className={`preview-canvas flex h-full min-h-70 max-h-107.5 items-center justify-center rounded-lg border border-[#e4e4f0] bg-[#f8f9fc] min-[761px]:min-h-83.75 min-[900px]:flex-1 ${preview ? "p-4" : ""}`}
@@ -46,11 +66,23 @@ export default function ImagePreview({
               className="max-h-87.5 max-w-full object-contain min-[761px]:max-h-97.5"
               src={preview}
               alt={`Preview of ${file?.name}`}
+              onLoad={(event) =>
+                setLoaded({
+                  src: preview,
+                  size: {
+                    width: event.currentTarget.naturalWidth,
+                    height: event.currentTarget.naturalHeight,
+                  },
+                })
+              }
               onError={onPreviewError}
             />
-            <span className="absolute right-2 bottom-2 rounded-md bg-[#18181b]/80 px-3 py-2 text-xs text-white">
-              Click to expand
-            </span>
+            {size && <BoxOverlay boxes={visibleBoxes} size={size} />}
+            {visibleBoxes.length === 0 && (
+              <span className="absolute right-2 bottom-2 rounded-md bg-[#18181b]/80 px-3 py-2 text-xs text-white">
+                Click to expand
+              </span>
+            )}
           </button>
         ) : (
           <div className="text-center text-[#71717a]">
@@ -76,10 +108,42 @@ export default function ImagePreview({
           </div>
         )}
       </div>
+      {debug && (
+        <p
+          className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#52525b]"
+          aria-live="polite"
+        >
+          {boxes ? (
+            <>
+              <span className="flex items-center gap-1.5">
+                <i
+                  className="h-3 w-3 border-2"
+                  style={{ borderColor: CHECKED_COLOR }}
+                />
+                Checked ({checked})
+              </span>
+              <span className="flex items-center gap-1.5">
+                <i
+                  className="h-3 w-3 border-2 border-dashed"
+                  style={{ borderColor: UNCHECKED_COLOR }}
+                />
+                Unchecked ({boxes.length - checked})
+              </span>
+              {boxes.length === 0 && (
+                <span>No checkboxes in the response.</span>
+              )}
+            </>
+          ) : (
+            "Run detection to draw the detected checkboxes on the image."
+          )}
+        </p>
+      )}
       {preview && expandedPreview === preview && (
         <ImageViewer
           src={preview}
           name={file?.name ?? "Document image"}
+          boxes={visibleBoxes}
+          size={size}
           onClose={() => setExpandedPreview(null)}
         />
       )}

@@ -1,12 +1,22 @@
 import { useEffect, useRef, useState } from "react";
+import type { DetectedBox } from "../detection";
+import BoxOverlay, { type ImageSize } from "./BoxOverlay";
 
 type ImageViewerProps = {
   src: string;
   name: string;
+  boxes: DetectedBox[];
+  size: ImageSize | null;
   onClose: () => void;
 };
 
-export default function ImageViewer({ src, name, onClose }: ImageViewerProps) {
+export default function ImageViewer({
+  src,
+  name,
+  boxes,
+  size,
+  onClose,
+}: ImageViewerProps) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [zoomed, setZoomed] = useState(false);
 
@@ -55,15 +65,18 @@ export default function ImageViewer({ src, name, onClose }: ImageViewerProps) {
           tabIndex={0}
           aria-label="Image; scroll to explore when zoomed"
         >
-          <img
+          <div
             className={
-              zoomed
-                ? "h-[200%] w-[200%] max-w-none object-contain"
-                : "h-full w-full object-contain"
+              zoomed ? "relative h-[200%] w-[200%]" : "relative h-full w-full"
             }
-            src={src}
-            alt={name}
-          />
+          >
+            <img
+              className="h-full w-full object-contain"
+              src={src}
+              alt={name}
+            />
+            {size && <BoxOverlay boxes={boxes} size={size} interactive />}
+          </div>
         </div>
       </div>
     </dialog>

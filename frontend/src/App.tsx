@@ -6,12 +6,16 @@ import ImagePreview from "./components/ImagePreview";
 import PageLayout from "./components/PageLayout";
 import WorkspaceIntro from "./components/WorkspaceIntro";
 import imageService from "./services/image.service";
+import { parseBoxes } from "./detection";
 import { validateImage } from "./upload";
 
 function App() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [validationError, setValidationError] = useState("");
+  const [debug, setDebug] = useState(() =>
+    new URLSearchParams(window.location.search).has("debug"),
+  );
 
   useEffect(() => {
     return () => {
@@ -65,6 +69,9 @@ function App() {
         <ImagePreview
           file={file}
           preview={preview}
+          boxes={mutation.isSuccess ? parseBoxes(mutation.data) : null}
+          debug={debug}
+          onDebugChange={setDebug}
           onPreviewError={() => {
             clearSelection();
             setValidationError(
