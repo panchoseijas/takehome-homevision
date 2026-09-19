@@ -55,8 +55,12 @@ func (p *page) fill(r image.Rectangle, c color.RGBA) {
 }
 
 func (p *page) line(from, to image.Point, thickness int) {
+	p.coloredLine(from, to, black, thickness)
+}
+
+func (p *page) coloredLine(from, to image.Point, c color.RGBA, thickness int) {
 	p.t.Helper()
-	if err := gocv.Line(&p.mat, from, to, black, thickness); err != nil {
+	if err := gocv.Line(&p.mat, from, to, c, thickness); err != nil {
 		p.t.Fatal(err)
 	}
 }

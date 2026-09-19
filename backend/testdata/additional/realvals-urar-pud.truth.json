@@ -1,0 +1,16 @@
+{"boxes": [
+  {"bbox":[308,2402,345,2438],"is_checked":false},
+  {"bbox":[645,2402,681,2438],"is_checked":true},
+  {"bbox":[1100,3225,1136,3262],"is_checked":false},
+  {"bbox":[1230,3225,1267,3262],"is_checked":false},
+  {"bbox":[1555,3225,1591,3262],"is_checked":false},
+  {"bbox":[1765,3225,1801,3262],"is_checked":false},
+  {"bbox":[1159,3463,1196,3499],"is_checked":false},
+  {"bbox":[1290,3463,1326,3499],"is_checked":false},
+  {"bbox":[823,3510,859,3547],"is_checked":false},
+  {"bbox":[953,3510,990,3547],"is_checked":false},
+  {"bbox":[1060,3558,1097,3594],"is_checked":false},
+  {"bbox":[1191,3558,1227,3594],"is_checked":false},
+  {"bbox":[1100,3700,1136,3737],"is_checked":false},
+  {"bbox":[1230,3700,1267,3737],"is_checked":false}
+]}

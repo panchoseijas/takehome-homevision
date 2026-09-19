@@ -3,6 +3,7 @@ package vision
 import (
 	"image"
 	"math"
+	"slices"
 
 	"gocv.io/x/gocv"
 )
@@ -40,10 +41,15 @@ func (d *Detector) findCandidates(gray, ink, ruling gocv.Mat) []Box {
 		// rule as one of their edges, and the interior alone would fail the
 		// aspect test there.
 		border := d.measureBorder(ruling, interior)
-		outer := image.Rect(
-			interior.Min.X-border[0], interior.Min.Y-border[1],
-			interior.Max.X+border[2], interior.Max.Y+border[3],
-		)
+		outer := expand(interior, border)
+		if !d.plausibleBox(outer) {
+			// A square box drawn against a thick rule measures one fat
+			// side and fails the aspect test. Retry with every side capped
+			// at the median thickness, which drops the rule and keeps the
+			// box's own stroke.
+			border = capAtMedian(border)
+			outer = expand(interior, border)
+		}
 		if !d.plausibleBox(outer) || !d.mostlyHollow(interior, outer) || !d.onLightBackground(gray, outer, bounds) {
 			continue
 		}
@@ -54,6 +60,24 @@ func (d *Detector) findCandidates(gray, ink, ruling gocv.Mat) []Box {
 		candidates = append(candidates, box)
 	}
 	return candidates
+}
+
+func expand(interior image.Rectangle, border [4]int) image.Rectangle {
+	return image.Rect(
+		interior.Min.X-border[0], interior.Min.Y-border[1],
+		interior.Max.X+border[2], interior.Max.Y+border[3],
+	)
+}
+
+// capAtMedian limits each thickness to the mean of the two middle values.
+func capAtMedian(border [4]int) [4]int {
+	sorted := border
+	slices.Sort(sorted[:])
+	median := (sorted[1] + sorted[2]) / 2
+	for i := range border {
+		border[i] = min(border[i], median)
+	}
+	return border
 }
 
 // plausibleInterior filters the hole before border measurement.
