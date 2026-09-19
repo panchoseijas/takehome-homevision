@@ -3,7 +3,7 @@ export type DetectedBox = {
   is_checked: boolean;
 };
 
-// Boxes are drawn in debug mode only, so a malformed entry is skipped rather
+// Boxes only drive the overlay, so a malformed entry is skipped rather
 // than failing the whole response: the raw JSON stays visible for inspection.
 export function parseBoxes(data: unknown): DetectedBox[] {
   if (typeof data !== "object" || data === null) return [];
