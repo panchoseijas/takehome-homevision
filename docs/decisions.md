@@ -1,6 +1,6 @@
 # Design decisions for `POST /detect`
 
-Each entry records the options that were weighed, the choice, and what it costs. Numbers quoted here were measured on the four sample images in `backend/testdata/` while building the detector; they are not an accuracy evaluation, which needs the annotations planned in `docs/plan.md` step 5.
+Each entry records the options that were weighed, the choice, and what it costs. Numbers quoted here were measured on the four sample images in `backend/testdata/` while building the detector; D11 and D12 cover the hand-made annotations and what checking against them changed.
 
 ## D1. Detector stack: GoCV/OpenCV
 
@@ -84,15 +84,15 @@ The frontend's `ApiService.readError` read a `message` field, so it was changed 
 - Skewed or rotated scans reduce the straight-run mask; the supported skew range has not been measured yet.
 - Thresholds were set by inspecting the four samples and have not been evaluated on held-out documents.
 
-## D11. Ground truth and evaluation
+## D11. Ground truth
 
 Options for defining the correct result of an image: compare against a stored copy of the detector's own output (a regression check, not a measure of accuracy); annotate every box by hand in an external tool; or correct a detector draft in a purpose-built editor.
 
-Chosen: the third. The correct result is a person's judgment under the mark classification policy in `docs/plan.md`, stored as `<image>.truth.json` in the `/detect` shape plus an `ambiguous` flag. The frontend's `/annotate` page seeds the file from the detector and the annotator deletes false positives, flips states, and draws missed boxes. `cmd/eval` matches predictions to annotations one-to-one at IoU 0.5 and reports localization precision/recall, state accuracy, and end-to-end F1; it also accepts `/detect`-shaped JSON files so alternatives outside this codebase are scored identically.
+Chosen: the third. The correct result is a person's judgment under the mark classification policy in `docs/plan.md`, stored as `<image>.truth.json` in the `/detect` shape plus an `ambiguous` flag. The frontend's `/annotate` page seeds the file from the detector and the annotator deletes false positives, flips states, and draws missed boxes. Annotations exist for the four challenge samples and the four pages under `testdata/additional`.
 
-Cost and caveats: a draft biases the annotator toward the current detector. Coordinates do not matter at IoU 0.5, but boxes the detector misses are absent from the draft and must be looked for deliberately. Ambiguous boxes accept either state rather than being scored twice. The four challenge samples tuned the thresholds, so their score is a regression signal; the pages under `testdata/additional` are the held-out set. With roughly 300 boxes in total, a difference of one or two boxes between alternatives is noise.
+Cost and caveats: a draft biases the annotator toward the current detector. Boxes the detector misses are absent from the draft and must be looked for deliberately, and a false positive in the draft can survive review. Ambiguous boxes must be found but accept either state. The four challenge samples tuned the thresholds, so agreement on them is a regression signal; the pages under `testdata/additional` were the held-out set. The numbers in D12 came from a scoring command (one-to-one matching at IoU 0.5) that was later removed to keep the submission focused; it remains in the Git history, and the editor and annotations stay.
 
-## D12. Changes driven by the evaluation
+## D12. Changes driven by the annotations
 
 Baseline against the annotations: the four challenge samples scored recall 0.986 (285 of 289) at precision 1.000, but the four held-out REALVALS pages scored recall 0.809 and precision 0.941. Each change below was kept only if it did not lower any challenge sample; where the two sets pulled in different directions, the challenge samples won.
 

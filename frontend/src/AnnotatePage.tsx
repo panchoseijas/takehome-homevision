@@ -146,9 +146,9 @@ export default function AnnotatePage() {
           ANNOTATION EDITOR
         </h1>
         <p className="mt-4 text-xs leading-[1.7] text-[#52525b]">
-          Build the ground truth used by <code>go run ./cmd/eval</code>. Start
-          from the detector's draft, fix it, and save the file beside the image
-          in <code>backend/testdata</code>.
+          Record the correct result for an image. Start from the detector's
+          draft, fix it, and save the file beside the image in{" "}
+          <code>backend/testdata</code>.
         </p>
       </div>
       <section className="mt-9 rounded-[20px] border border-[#e4e4e7] bg-white p-5.5 shadow-[0_6px_24px_#18181b08] min-[761px]:mt-12 min-[761px]:p-8">

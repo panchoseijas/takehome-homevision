@@ -91,23 +91,10 @@ go run ./cmd/detect -debug -overlay /tmp/sample1.png testdata/sample1-urar-page1
 
 Green rectangles are checked boxes, red are unchecked. Detection time and box count are printed to stderr.
 
-## Evaluation
-
-`cmd/eval` scores a detector against hand-made annotations. An annotation file is `<image name>.truth.json` beside its image under `testdata/`, in the `/detect` response shape plus an optional `"ambiguous": true` per box. Create and edit them in the frontend at `/annotate` (see `../frontend/README.md`), following the mark classification policy in `../docs/plan.md`.
-
-```sh
-go run ./cmd/eval                          # built-in detector, every annotated image
-go run ./cmd/eval -v -overlay /tmp/eval    # list each error and draw it
-go run ./cmd/eval -predictions /tmp/other  # score <image name>.json files from another detector
-```
-
-Predictions match annotations one-to-one at IoU >= 0.5 (`-iou`). The table reports localization precision, recall and F1, state accuracy on matched boxes, end-to-end F1 (found and classified correctly), mean IoU, and detection time. Ambiguous boxes must be found but accept either state. In overlays green is correct, orange a wrong state, red a false positive, and blue a missed annotation; labels are annotation indexes. `-predictions` takes `/detect`-shaped JSON, so an alternative in any language is scored by the same code.
-
 ## Layout
 
 - `cmd/server`: HTTP server assembly, flags, graceful shutdown.
 - `cmd/detect`: command-line runner and overlay writer.
-- `cmd/eval`: scores detections against `*.truth.json` annotations; `internal/eval` holds the matching and metrics.
 - `internal/httpapi`: upload validation, limits, JSON contract.
 - `internal/vision`: the detector. `params.go` holds every tunable with its rationale; `detector.go` is the pipeline; `candidates.go` filters and classifies; `boxes.go` clamps, deduplicates, and sorts.
 - `testdata`: the four sample documents from the challenge.

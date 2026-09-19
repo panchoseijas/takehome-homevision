@@ -24,13 +24,13 @@ The overlay is an SVG whose `viewBox` is the image's pixel grid, so `bbox` coord
 
 ## Annotation editor
 
-`/annotate` builds the ground-truth files that `backend/cmd/eval` scores against. Choose an image from `backend/testdata`, press "Draft from detector" (or "Load annotations" to reopen a saved file), then correct the draft:
+`/annotate` records the correct result for an image: every checkbox and its state, as judged by a person. Choose an image from `backend/testdata`, press "Draft from detector" (or "Load annotations" to reopen a saved file), then correct the draft:
 
 - click a box to select it; `C` or Space toggles checked, `A` toggles ambiguous, Delete removes it, Escape deselects;
-- drag on the page to add a box the detector missed. Matching uses IoU 0.5, so a drawn box only has to be roughly right; to fix a misplaced one, delete it and draw it again;
+- drag on the page to add a box the detector missed; to fix a misplaced one, delete it and draw it again;
 - use 2× or 4× zoom on full pages, and look for checkboxes with no rectangle on them, since a draft can never contain the detector's own misses.
 
-"Save" downloads `<image name>.truth.json`; move it beside the image in `backend/testdata`. The page is a second entry chosen from `window.location.pathname` in `src/main.tsx`; two pages did not justify a router dependency.
+"Save" downloads `<image name>.truth.json`, the `/detect` response shape plus an optional `"ambiguous": true` per box; move it beside the image in `backend/testdata`, where the four samples and the pages under `additional/` already have one. The page is a second entry chosen from `window.location.pathname` in `src/main.tsx`; two pages did not justify a router dependency.
 
 ## API service
 

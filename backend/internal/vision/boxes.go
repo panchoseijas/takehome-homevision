@@ -54,7 +54,7 @@ func dedupe(boxes []Box, threshold float64) []Box {
 	for _, candidate := range byArea {
 		duplicate := false
 		for _, existing := range kept {
-			if IoU(candidate, existing) >= threshold {
+			if iou(candidate, existing) >= threshold {
 				duplicate = true
 				break
 			}
@@ -66,8 +66,7 @@ func dedupe(boxes []Box, threshold float64) []Box {
 	return kept
 }
 
-// IoU is the intersection-over-union of two boxes, 0 when they do not overlap.
-func IoU(a, b Box) float64 {
+func iou(a, b Box) float64 {
 	inter := a.Rect().Intersect(b.Rect())
 	if inter.Empty() {
 		return 0
