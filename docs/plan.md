@@ -74,11 +74,11 @@ The samples contain more than empty boxes and X marks. Fix the labeling policy b
 | Solid or near-solid dark fill | checked | Not present in the samples; included for completeness. |
 | Empty box | unchecked | |
 | Box over blue or gray shaded background, no stroke (sample 3 shaded rows) | unchecked | Shading is form styling, not a mark. |
-| Uniform gray or hatched interior with no distinct stroke (sample 2, Electricity → Public) | unchecked, `ambiguous` | Likely scan artifact or partially printed fill. |
+| Uniform gray or hatched interior with no distinct stroke (sample 2, Electricity → Public) | unchecked | Likely scan artifact or partially printed fill. |
 | Colored watermark or signature ink crossing a box (sample 4) | ignore the colored ink | Only dark ink inside the box counts as a mark. |
 | Hand-drawn loops or strokes outside any box (sample 2, over the description text) | not a checkbox | Negative example for detection. |
 
-Annotate ambiguous cases with an `ambiguous: true` flag and report metrics both including and excluding them. If a new mark type appears in later images, extend this table rather than deciding case by case.
+If a new mark type appears in later images, extend this table rather than deciding case by case.
 
 ## Build sequence
 

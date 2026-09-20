@@ -8,7 +8,6 @@ type StatusBarProps = {
   annotating: boolean;
   selected: number | null;
   onToggleChecked: (index: number) => void;
-  onToggleAmbiguous: (index: number) => void;
   onDelete: (index: number) => void;
 };
 
@@ -29,12 +28,10 @@ export default function StatusBar({
   annotating,
   selected,
   onToggleChecked,
-  onToggleAmbiguous,
   onDelete,
 }: StatusBarProps) {
   const box = boxes && selected !== null ? boxes[selected] : null;
   const checked = boxes?.filter((one) => one.is_checked).length ?? 0;
-  const ambiguous = boxes?.filter((one) => one.ambiguous).length ?? 0;
 
   return (
     <div className="my-3 flex min-h-9 flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[#52525b]">
@@ -43,12 +40,6 @@ export default function StatusBar({
           <span className="font-mono">[{box.bbox.join(", ")}]</span>
           <ToolButton onClick={() => onToggleChecked(selected)}>
             {box.is_checked ? "Mark unchecked" : "Mark checked"} (C)
-          </ToolButton>
-          <ToolButton
-            aria-pressed={box.ambiguous ?? false}
-            onClick={() => onToggleAmbiguous(selected)}
-          >
-            {box.ambiguous ? "Clear ambiguous" : "Mark ambiguous"} (A)
           </ToolButton>
           <ToolButton onClick={() => onDelete(selected)}>
             Delete (⌫)
@@ -78,7 +69,6 @@ export default function StatusBar({
             />
             Unchecked ({boxes.length - checked})
           </span>
-          {annotating && <span>Ambiguous ({ambiguous})</span>}
           {boxes.length === 0 && <span>No checkboxes yet.</span>}
         </p>
       )}

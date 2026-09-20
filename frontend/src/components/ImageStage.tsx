@@ -173,7 +173,7 @@ export default function ImageStage({
                 onPointerCancel={() => setDrag(null)}
               >
                 {boxes.map(
-                  ({ bbox: [x1, y1, x2, y2], is_checked, ambiguous }, index) => {
+                  ({ bbox: [x1, y1, x2, y2], is_checked }, index) => {
                     const color = is_checked ? CHECKED_COLOR : UNCHECKED_COLOR;
                     const isSelected = annotating && index === selected;
                     return (
@@ -198,21 +198,9 @@ export default function ImageStage({
                           }}
                         >
                           <title>
-                            {`${is_checked ? "Checked" : "Unchecked"}${ambiguous ? ", ambiguous" : ""} [${x1}, ${y1}, ${x2}, ${y2}]`}
+                            {`${is_checked ? "Checked" : "Unchecked"} [${x1}, ${y1}, ${x2}, ${y2}]`}
                           </title>
                         </rect>
-                        {ambiguous && (
-                          <text
-                            className="pointer-events-none select-none"
-                            x={x2 + 4}
-                            y={y2}
-                            fontSize={(y2 - y1) * 0.9}
-                            fontWeight={700}
-                            fill={color}
-                          >
-                            ?
-                          </text>
-                        )}
                       </g>
                     );
                   },

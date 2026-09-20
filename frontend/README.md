@@ -37,11 +37,11 @@ The overlay is an SVG whose `viewBox` is the image's pixel grid, so `bbox` coord
 
 Annotate mode records the correct result for an image: every checkbox and its state, as judged by a person. Press **Annotate** and the detector's boxes become an editable draft. Then correct it:
 
-- click a box to select it; `C` or Space toggles checked, `A` toggles ambiguous, Delete removes it, Escape deselects;
+- click a box to select it; `C` or Space toggles checked, Delete removes it, Escape deselects;
 - drag on the document to add a box the detector missed; to fix a misplaced one, delete it and draw it again;
 - use 2× or 4× zoom on full pages, and look for checkboxes with no rectangle on them, since a draft can never contain the detector's own misses.
 
-"Save" downloads `<image name>.truth.json`, the `/detect` response shape plus an optional `"ambiguous": true` per box; move it beside the image in `backend/testdata`, where the four samples and the pages under `additional/` already have one. A saved file cannot be reopened in the page: a draft always starts from the detector, so correcting an existing annotation means editing the JSON by hand. Leaving the page with unsaved edits asks for confirmation, as does replacing them with a fresh detection; a detection on its own is never treated as unsaved work, since it can be re-run.
+"Save" downloads `<image name>.truth.json`, the `/detect` response shape; move it beside the image in `backend/testdata`, where the four samples already have one. A saved file cannot be reopened in the page: a draft always starts from the detector, so correcting an existing annotation means editing the JSON by hand. Leaving the page with unsaved edits asks for confirmation, as does replacing them with a fresh detection; a detection on its own is never treated as unsaved work, since it can be re-run.
 
 Annotating is a mode of the one page rather than a separate route: the same image, zoom, and boxes stay on screen when it is turned on, so there is no second upload and nothing to re-align.
 

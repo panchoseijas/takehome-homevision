@@ -1,20 +1,12 @@
 import { useEffect, useState } from "react";
-import {
-  serializeTruth,
-  truthFileName,
-  type AnnotatedBox,
-} from "./annotation";
+import { serializeTruth, truthFileName, type AnnotatedBox } from "./annotation";
 
-// Owns the boxes drawn over the open image: the detector's result while
-// viewing, an editable draft while annotating, and the file saved from it.
-// `image` is the open document, and names the file that "save" downloads.
 export function useAnnotations(image: File | null) {
   const [boxes, setBoxes] = useState<AnnotatedBox[] | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
   const [annotating, setAnnotating] = useState(false);
   const [dirty, setDirty] = useState(false);
 
-  // Only hand-made edits are unsaved work; a detection can always be re-run.
   useEffect(() => {
     if (!dirty) return;
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
@@ -29,8 +21,6 @@ export function useAnnotations(image: File | null) {
       if (event.target instanceof HTMLInputElement) return;
       if (event.key === "c" || event.key === " ") {
         toggleChecked(index);
-      } else if (event.key === "a") {
-        toggleAmbiguous(index);
       } else if (event.key === "Delete" || event.key === "Backspace") {
         remove(index);
       } else if (event.key === "Escape") {
@@ -55,10 +45,6 @@ export function useAnnotations(image: File | null) {
     edit(index, (box) => ({ ...box, is_checked: !box.is_checked }));
   }
 
-  function toggleAmbiguous(index: number) {
-    edit(index, (box) => ({ ...box, ambiguous: !box.ambiguous }));
-  }
-
   function remove(index: number) {
     setBoxes((current) => (current ?? []).filter((_, i) => i !== index));
     setSelected(null);
@@ -71,14 +57,12 @@ export function useAnnotations(image: File | null) {
     setDirty(true);
   }
 
-  // Replaces the boxes wholesale: a detection, a loaded file, or a new image.
   function replace(next: AnnotatedBox[] | null) {
     setBoxes(next);
     setSelected(null);
     setDirty(false);
   }
 
-  // Annotating an image that was never detected starts from an empty draft.
   function toggleAnnotating() {
     setSelected(null);
     setAnnotating(!annotating);
@@ -110,7 +94,6 @@ export function useAnnotations(image: File | null) {
     canSave: boxes !== null && image !== null,
     select: setSelected,
     toggleChecked,
-    toggleAmbiguous,
     remove,
     add,
     replace,
