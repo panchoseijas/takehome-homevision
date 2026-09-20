@@ -76,10 +76,6 @@ Errors are JSON, `{"error":"..."}`:
 | 415 | File is not PNG or JPEG |
 | 503 | All detection slots busy for 5 s (`Retry-After` is set) |
 
-### `GET /healthz`
-
-Returns `200 {"status":"ok"}`. Used by the frontend for connection state.
-
 ## Command-line detector
 
 `cmd/detect` runs the same detector on a file and prints the same JSON, optionally drawing the result:

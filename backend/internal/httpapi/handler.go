@@ -65,12 +65,7 @@ func New(detector Detector, config Config) http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /detect", s.handleDetect)
-	mux.HandleFunc("GET /healthz", handleHealthz)
 	return mux
-}
-
-func handleHealthz(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (s *server) handleDetect(w http.ResponseWriter, r *http.Request) {
