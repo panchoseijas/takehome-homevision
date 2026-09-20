@@ -8,10 +8,6 @@ import (
 	"gocv.io/x/gocv"
 )
 
-// findCandidates turns each enclosed hole of the ruling mask into a classified
-// Box. Holes are the second level of the RETR_CCOMP hierarchy; their contour
-// points lie on the border pixels that surround the hole, so the true white
-// interior is the contour's bounding rectangle shrunk by one pixel.
 func (d *Detector) findCandidates(gray, ink, ruling gocv.Mat) []Box {
 	bounds := image.Rect(0, 0, gray.Cols(), gray.Rows())
 	hierarchy := gocv.NewMat()
@@ -35,18 +31,9 @@ func (d *Detector) findCandidates(gray, ink, ruling gocv.Mat) []Box {
 			continue
 		}
 
-		// The measured ink around the hole includes any table rule the box
-		// shares an edge with, so such boxes extend a few pixels into the
-		// rule. That is accepted: the sample forms print those boxes with the
-		// rule as one of their edges, and the interior alone would fail the
-		// aspect test there.
 		border := d.measureBorder(ruling, interior)
 		outer := expand(interior, border)
 		if !d.plausibleBox(outer) {
-			// A square box drawn against a thick rule measures one fat
-			// side and fails the aspect test. Retry with every side capped
-			// at the median thickness, which drops the rule and keeps the
-			// box's own stroke.
 			border = capAtMedian(border)
 			outer = expand(interior, border)
 		}
@@ -80,12 +67,10 @@ func capAtMedian(border [4]int) [4]int {
 	return border
 }
 
-// plausibleInterior filters the hole before border measurement.
 func (d *Detector) plausibleInterior(interior image.Rectangle) bool {
 	return sidesWithin(interior, d.params.MinInteriorSide, d.params.MaxBoxSide)
 }
 
-// plausibleBox applies the documented size and aspect limits to the outer box.
 func (d *Detector) plausibleBox(outer image.Rectangle) bool {
 	return sidesWithin(outer, d.params.MinBoxSide, d.params.MaxBoxSide) && d.nearSquare(outer)
 }
@@ -103,9 +88,6 @@ func (d *Detector) nearSquare(r image.Rectangle) bool {
 	return aspect <= d.params.MaxAspectRatio && 1/aspect <= d.params.MaxAspectRatio
 }
 
-// rectangularity compares the contour area with the interior rectangle area.
-// A hole bounded by straight ruling scores close to 1; L-shaped or ragged
-// holes score lower.
 func rectangularity(contourArea float64, interior image.Rectangle) float64 {
 	rectArea := float64(interior.Dx() * interior.Dy())
 	if rectArea <= 0 {
@@ -114,9 +96,6 @@ func rectangularity(contourArea float64, interior image.Rectangle) float64 {
 	return math.Min(contourArea/rectArea, 1)
 }
 
-// measureBorder walks outward from the middle of each interior edge through
-// the ruling mask and returns the border thickness as [left, top, right,
-// bottom], each at least 1 and at most MaxBorderThickness.
 func (d *Detector) measureBorder(ruling gocv.Mat, interior image.Rectangle) [4]int {
 	midX := (interior.Min.X + interior.Max.X) / 2
 	midY := (interior.Min.Y + interior.Max.Y) / 2
@@ -130,8 +109,6 @@ func (d *Detector) measureBorder(ruling gocv.Mat, interior image.Rectangle) [4]i
 	}
 }
 
-// mostlyHollow reports whether the interior takes at least
-// MinInteriorFraction of the outer box area.
 func (d *Detector) mostlyHollow(interior, outer image.Rectangle) bool {
 	outerArea := outer.Dx() * outer.Dy()
 	if outerArea <= 0 {
@@ -140,10 +117,6 @@ func (d *Detector) mostlyHollow(interior, outer image.Rectangle) bool {
 	return float64(interior.Dx()*interior.Dy())/float64(outerArea) >= d.params.MinInteriorFraction
 }
 
-// onLightBackground reports whether the SurroundBand-wide ring just outside
-// the box is on average brighter than MinSurroundGray. White glyphs on a dark
-// bar produce enclosed holes that pass every geometric test; their
-// surroundings are ink, a checkbox's are paper.
 func (d *Detector) onLightBackground(gray gocv.Mat, outer, bounds image.Rectangle) bool {
 	neighborhood := outer.Inset(-d.params.SurroundBand).Intersect(bounds)
 	inner := outer.Intersect(bounds)
@@ -162,9 +135,6 @@ func (d *Detector) onLightBackground(gray gocv.Mat, outer, bounds image.Rectangl
 	return (neighborhoodSum-innerSum)/float64(ringArea) >= d.params.MinSurroundGray
 }
 
-// runLength counts consecutive non-zero pixels starting at (x, y) and stepping
-// by (dx, dy), stopping at limit or the image edge. It returns at least 1
-// because a hole is by construction enclosed by at least one ruling pixel.
 func runLength(mask gocv.Mat, x, y, dx, dy, limit int) int {
 	inMask := func(x, y int) bool {
 		return x >= 0 && y >= 0 && x < mask.Cols() && y < mask.Rows()
@@ -182,9 +152,6 @@ func runLength(mask gocv.Mat, x, y, dx, dy, limit int) int {
 	return count
 }
 
-// classify measures the ink fraction of the interior after trimming
-// InteriorMargin from each edge. It reads the original binary image, not the
-// ruling mask, so X marks and ticks are visible.
 func (d *Detector) classify(ink gocv.Mat, interior image.Rectangle, debug *Debug) bool {
 	shorter := min(interior.Dx(), interior.Dy())
 	margin := max(int(math.Round(float64(shorter)*d.params.InteriorMargin)), 1)
