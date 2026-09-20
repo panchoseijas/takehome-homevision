@@ -1,0 +1,16 @@
+services:
+  backend:
+    # Use the x86 image: the upstream ARM OpenCV image can crash on Apple Silicon.
+    platform: linux/amd64
+    build: ./backend
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      API_PROXY_TARGET: http://backend:8080
+    depends_on:
+      - backend
