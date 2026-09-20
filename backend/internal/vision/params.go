@@ -6,9 +6,8 @@ type Params struct {
 	MaxPixels int
 
 	// AdaptiveBlockSize is the odd neighborhood size for adaptive
-	// thresholding. It must be wide enough that the local mean is dominated
-	// by paper even beside a checkbox filled with a bold X (about 40 px at
-	// 300 DPI); at 31 the faint borders of such boxes fell below threshold.
+	// thresholding. It must be larger than the thickest stroke of interest so
+	// the local mean is dominated by paper rather than ink.
 	AdaptiveBlockSize int
 	// AdaptiveC is subtracted from the local mean before comparison. Higher
 	// values ignore light shading edges and JPEG noise; lower values keep
@@ -20,17 +19,10 @@ type Params struct {
 	// must be shorter than the smallest checkbox side or the box border
 	// disappears, and longer than most glyph strokes.
 	LineKernelLength int
-	// LineGapBridge is the longest gap, in pixels along a line, that a
-	// surviving run may cross when it is regrown after the opening. A bold
-	// mark beside a faint 1 px border darkens the local mean enough to drop
-	// border pixels from the binary image; without regrowth the short half
-	// of the split border is discarded and the box is no longer enclosed.
-	LineGapBridge int
 
 	// MinBoxSide and MaxBoxSide bound the outer side length of a candidate.
-	// The floor also rejects the bowls of text glyphs, which survive the
-	// ruling opening at 12-19 px for body text and 20-21 px for capitals
-	// (D, O, Q) in headings; the smallest annotated checkbox is 23 px.
+	// The floor also rejects the bowls of small text glyphs (o, a, d, 8),
+	// which survive the ruling opening at roughly 12-19 px in the samples.
 	MinBoxSide int
 	MaxBoxSide int
 	// MinInteriorSide is the smallest interior (inside the border) that can
@@ -84,11 +76,10 @@ type Params struct {
 func DefaultParams() Params {
 	return Params{
 		MaxPixels:           25_000_000,
-		AdaptiveBlockSize:   71,
+		AdaptiveBlockSize:   31,
 		AdaptiveC:           15,
 		LineKernelLength:    12,
-		LineGapBridge:       1,
-		MinBoxSide:          22,
+		MinBoxSide:          20,
 		MaxBoxSide:          120,
 		MinInteriorSide:     10,
 		MaxAspectRatio:      1.25,

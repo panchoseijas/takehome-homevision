@@ -14,7 +14,7 @@ Cost: a native dependency. Building requires OpenCV installed on the host, and G
 
 Options: global Otsu threshold; adaptive mean or Gaussian threshold.
 
-Chosen: `AdaptiveThreshold(..., Gaussian, BinaryInv, block 71, C 15)` (block 31 until D12), so ink is 255 and paper is 0. Sample 3 has blue and gray shaded cells that a global threshold turns into solid ink, hiding the boxes on them, and sample 2 is a JPEG scan with uneven background. A local threshold treats shading as background because it is uniform within the block. The plan's Otsu comparison remains a step-5 task.
+Chosen: `AdaptiveThreshold(..., Gaussian, BinaryInv, block 31, C 15)`, so ink is 255 and paper is 0. Sample 3 has blue and gray shaded cells that a global threshold turns into solid ink, hiding the boxes on them, and sample 2 is a JPEG scan with uneven background. A local threshold treats shading as background because it is uniform within the block. The plan's Otsu comparison remains a step-5 task.
 
 Cost: solid regions wider than the block become hollow in the binary image (their centers are "paper" relative to the local mean). That is harmless here because candidates come from the ruling mask (D3), but it is one reason solid-filled boxes are not detected (D10).
 
@@ -28,7 +28,7 @@ Options considered:
 
 Chosen: option 2. An X or tick stroke that touches the border merges with it and breaks option 1; so does a box that shares an edge with a table rule, which happens in every sample. Straight-run filtering removes glyphs and diagonal marks before contours are taken, so the border stays closed and the interior remains a clean hole regardless of what is drawn inside. Option 3 needs segment grouping logic that is fragile on dense grids.
 
-Cost: any enclosed rectangle of ruling is a candidate, so the filters in D4 carry the burden of rejecting table cells, glyph bowls, and letters cut out of dark bars. The opening kernel (12 px) must stay shorter than the smallest box side (22 px) and longer than most glyph strokes.
+Cost: any enclosed rectangle of ruling is a candidate, so the filters in D4 carry the burden of rejecting table cells, glyph bowls, and letters cut out of dark bars. The opening kernel (12 px) must stay shorter than the smallest box side (20 px) and longer than most glyph strokes.
 
 ## D4. Candidate filters
 
@@ -38,14 +38,14 @@ All thresholds live in `vision.Params` with a one-line reason each. The filters,
 | --- | --- | --- |
 | Interior at least `MinInteriorSide` | 10 px | Specks enclosed by thick rules. |
 | Rectangularity (contour area / bounding area) | 0.85 | Ragged or L-shaped holes. |
-| Outer side within `MinBoxSide..MaxBoxSide` | 22..120 px | Bowls of text glyphs at 12-19 px, and heading capitals (D, O, Q) at 20-21 px; the smallest annotated checkbox is 23 px. |
+| Outer side within `MinBoxSide..MaxBoxSide` | 20..120 px | Bowls of small text glyphs (o, a, d, 8) at 12-19 px; the smallest annotated checkbox is 23 px. |
 | Outer aspect ratio | 1.25 | Table cells; the samples' nearest square cells sit at 1.3. |
 | Interior share of outer area `MinInteriorFraction` | 0.5 | Bowls of bold title glyphs: 22 px outer with 5-7 px strokes are one third interior; checkboxes are two thirds or more even when they share a rule. |
 | Mean gray of a 4 px ring outside the box `MinSurroundGray` | 128 | White letters cut out of the black and blue sidebars in samples 1 and 3 pass every geometric test; their surroundings are ink, a checkbox's are paper. |
 
 Sizes are absolute pixels rather than fractions of image width because sample 2 is a crop of a page; width-relative sizing would misjudge its scale. The defaults cover roughly 100-300 DPI letter forms. Rejected alternative: a fixed interior aspect test, which fails on sample 1 where boxes share thick top and bottom rules and the visible interior is 53x42.
 
-Effect on the samples, boxes reported before and after the filters beyond size and aspect: sample 1 341 to 119, sample 2 62 to 41, sample 3 516 to 48, sample 4 164 to 77. Visual inspection of the overlays found no remaining glyph or sidebar false positives; the annotations in D11 later showed four missed boxes, addressed in D12.
+Effect on the samples, boxes reported before and after the filters beyond size and aspect: sample 1 341 to 119, sample 2 62 to 41, sample 3 516 to 48, sample 4 164 to 77. Visual inspection of the overlays found no remaining glyph or sidebar false positives; the annotations in D11 later showed missed boxes and glyph false positives, discussed in D12.
 
 ## D5. Classification: interior ink fraction
 
@@ -94,15 +94,14 @@ Cost and caveats: a draft biases the annotator toward the current detector. Boxe
 
 ## D12. Changes driven by the annotations
 
-Baseline against the annotations: the four challenge samples scored recall 0.986 (285 of 289) at precision 1.000, but the four held-out REALVALS pages scored recall 0.809 and precision 0.941. Each change below was kept only if it did not lower any challenge sample; where the two sets pulled in different directions, the challenge samples won.
+Baseline against the annotations, scored at IoU 0.5: the four challenge samples reached recall 0.986 (285 of 289) at precision 1.000, and the four held-out REALVALS pages recall 0.804 (123 of 153) at precision 0.911.
 
 | Finding | Cause | Change |
 | --- | --- | --- |
-| 29 of 30 held-out misses were checked boxes with a bold X. | The border is a faint 1 px line; the X darkens the local mean of a 31 px block, border pixels beside it drop out of the binary image, the split border's short half fails the 12 px opening, and the hole leaks into the table cell. | `AdaptiveBlockSize` 31 to 71, and `straightRuns` regrows each surviving run along its own direction over ink (`LineGapBridge` 1). Closing the ink before the opening was tried first and rejected: it lets diagonal X strokes through and cost sample 2 five boxes. |
-| Sample 4 missed the "did / did not" pair. | Both sit directly under a heavy rule; its thickness was measured as the box's top border, giving 30x38 and failing the aspect test. | When the measured box fails the size and aspect test, retry with each side capped at the median thickness. Boxes that already passed are untouched, so sample 1's boxes that legitimately share rules (D6) keep their coordinates. |
-| Block 71 turned sample 4's red watermark into ink, enclosing two false boxes. | Luminance grayscale renders saturated red as mid-gray. | Binarize the per-pixel maximum of B, G, and R. Black print stays dark; colored ink and tinted cells read as paper, which is also what the mark policy asks for. |
-| Eight held-out false positives on capital D, O, Q in headings. | Their bowls are 20-21 px wide, just above the old 20 px floor. | `MinBoxSide` 20 to 22. |
+| Sample 4 missed the "did / did not" pair. | Both sit directly under a heavy rule; its thickness was measured as the box's top border, giving an outer box of 30x38 that failed the aspect test. | When the measured box fails the size and aspect test, retry with every side capped at the median measured thickness, which drops the rule and keeps the box's own stroke. Boxes that already passed are untouched, so sample 1's boxes that legitimately share rules (D6) keep their coordinates. |
 
-Result: challenge samples recall 0.993 (287 of 289), held-out recall 0.941 (144 of 153), precision 1.000 on all eight images, state accuracy 1.000. Four letters that the annotator had accepted from the detector draft were removed from the held-out annotations during this work, which is the draft bias D11 warns about.
+Result: challenge samples recall 0.993 (287 of 289) at precision 1.000, held-out pages unchanged at recall 0.804 and precision 0.911, state accuracy 1.000 on all eight images.
 
-Remaining misses. Sample 2: the faint "Neighborhood Boundaries" box (border about 30 gray levels from paper, below `AdaptiveC`) and the hatched ambiguous box. Held-out: nine bold-X boxes whose border dropouts exceed what regrowth recovers. `AdaptiveC` 10 recovers five of them at the cost of one false positive; it was not adopted because the block size had already been chosen with these pages in view, so they are no longer a clean held-out set for further tuning.
+Known misses and false positives. Sample 2: the faint "Neighborhood Boundaries" box (border about 30 gray levels from paper, below `AdaptiveC`) and the hatched box, which has no clean rectangular hole. Held-out: 30 misses, 29 of them checked boxes whose faint 1 px border drops out of the binary image beside a bold X, so the border splits, its short half fails the 12 px opening, and the hole leaks into the surrounding table cell; plus twelve false positives, every one the bowl of a capital D in a heading ("Design", "Dr", "Dry"), measuring 20 px across and so clearing the `MinBoxSide` floor exactly.
+
+Explored on a branch and not in the tree (commit 4e55d40): raising the adaptive block to 71 with a regrowth step that extends surviving runs along their own direction, binarizing the per-pixel maximum of B, G, and R so colored ink reads as paper, and a 22 px `MinBoxSide`. Together they took the held-out pages to recall 0.941 at precision 1.000 without changing the challenge sample score; they were tuned with the held-out pages in view, so that figure is not a clean generalization estimate.
