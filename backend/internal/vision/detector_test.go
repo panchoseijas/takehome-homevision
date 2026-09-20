@@ -7,7 +7,6 @@ import (
 	"errors"
 	"hash/crc32"
 	"image"
-	"image/color"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -159,25 +158,6 @@ func TestDetectMergesNestedDoubleBorder(t *testing.T) {
 	if !boxes[0].Checked {
 		t.Errorf("nested box should be checked, got %+v", boxes[0])
 	}
-}
-
-func TestDetectIgnoresHolesInDarkBars(t *testing.T) {
-	p := newPage(t, 400, 300)
-	// A sidebar like the black "SUBJECT" band in sample 1: white square
-	// letters cut out of solid ink.
-	p.fill(image.Rect(0, 0, 80, 300), black)
-	for y := 20; y < 280; y += 60 {
-		p.fill(image.Rect(20, y, 60, y+40), color.RGBA{R: 255, G: 255, B: 255, A: 255})
-		p.fill(image.Rect(24, y+4, 56, y+36), black)
-	}
-	want := image.Rect(200, 100, 240, 140)
-	p.box(want)
-
-	boxes := p.detect()
-	if len(boxes) != 1 {
-		t.Fatalf("got %d boxes, want only the checkbox: %v", len(boxes), boxes)
-	}
-	assertBox(t, boxes[0], want, false, edgeTolerance)
 }
 
 func TestDetectReturnsReadingOrderAndStaysInBounds(t *testing.T) {

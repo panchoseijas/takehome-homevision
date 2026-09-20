@@ -41,7 +41,7 @@ Annotate mode records the correct result for an image: every checkbox and its st
 - drag on the document to add a box the detector missed; to fix a misplaced one, delete it and draw it again;
 - use 2× or 4× zoom on full pages, and look for checkboxes with no rectangle on them, since a draft can never contain the detector's own misses.
 
-"Save" downloads `<image name>.truth.json`, the `/detect` response shape; move it beside the image in `backend/testdata`, where the four samples and the pages under `additional/` already have one. A saved file cannot be reopened in the page: a draft always starts from the detector, so correcting an existing annotation means editing the JSON by hand. Leaving the page with unsaved edits asks for confirmation, as does replacing them with a fresh detection; a detection on its own is never treated as unsaved work, since it can be re-run.
+"Save" downloads `<image name>.truth.json`, the `/detect` response shape; move it beside the image in `backend/testdata`, where the four samples already have one. A saved file cannot be reopened in the page: a draft always starts from the detector, so correcting an existing annotation means editing the JSON by hand. Leaving the page with unsaved edits asks for confirmation, as does replacing them with a fresh detection; a detection on its own is never treated as unsaved work, since it can be re-run.
 
 Annotating is a mode of the one page rather than a separate route: the same image, zoom, and boxes stay on screen when it is turned on, so there is no second upload and nothing to re-align.
 

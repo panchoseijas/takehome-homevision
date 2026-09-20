@@ -67,7 +67,7 @@ func (d *Detector) Detect(ctx context.Context, data []byte) ([]Box, error) {
 		return nil, err
 	}
 
-	candidates := d.findCandidates(gray, ink, ruling)
+	candidates := d.findCandidates(ink, ruling)
 	return finalize(candidates, bounds, d.params.DedupeIoU), nil
 }
 

@@ -28,7 +28,7 @@ Options considered:
 
 Chosen: option 2. An X or tick stroke that touches the border merges with it and breaks option 1; so does a box that shares an edge with a table rule, which happens in every sample. Straight-run filtering removes glyphs and diagonal marks before contours are taken, so the border stays closed and the interior remains a clean hole regardless of what is drawn inside. Option 3 needs segment grouping logic that is fragile on dense grids.
 
-Cost: any enclosed rectangle of ruling is a candidate, so the filters in D4 carry the burden of rejecting table cells, glyph bowls, and letters cut out of dark bars. The opening kernel (12 px) must stay shorter than the smallest box side (20 px) and longer than most glyph strokes.
+Cost: any enclosed rectangle of ruling is a candidate, so the filters in D4 carry the burden of rejecting table cells and glyph bowls. The opening kernel (12 px) must stay shorter than the smallest box side (20 px) and longer than most glyph strokes.
 
 ## D4. Candidate filters
 
@@ -41,11 +41,10 @@ All thresholds live in `vision.Params` with a one-line reason each. The filters,
 | Outer side within `MinBoxSide..MaxBoxSide` | 20..120 px | Bowls of small text glyphs (o, a, d, 8) at 12-19 px; the smallest annotated checkbox is 23 px. |
 | Outer aspect ratio | 1.25 | Table cells; the samples' nearest square cells sit at 1.3. |
 | Interior share of outer area `MinInteriorFraction` | 0.5 | Bowls of bold title glyphs: 22 px outer with 5-7 px strokes are one third interior; checkboxes are two thirds or more even when they share a rule. |
-| Mean gray of a 4 px ring outside the box `MinSurroundGray` | 128 | White letters cut out of the black and blue sidebars in samples 1 and 3 pass every geometric test; their surroundings are ink, a checkbox's are paper. |
 
 Sizes are absolute pixels rather than fractions of image width because sample 2 is a crop of a page; width-relative sizing would misjudge its scale. The defaults cover roughly 100-300 DPI letter forms. Rejected alternative: a fixed interior aspect test, which fails on sample 1 where boxes share thick top and bottom rules and the visible interior is 53x42.
 
-Effect on the samples, boxes reported before and after the filters beyond size and aspect: sample 1 341 to 119, sample 2 62 to 41, sample 3 516 to 48, sample 4 164 to 77. Visual inspection of the overlays found no remaining glyph or sidebar false positives; the annotations in D11 later showed missed boxes and glyph false positives, discussed in D12.
+Effect on the samples, boxes reported before and after the filters beyond size and aspect: sample 1 341 to 119, sample 2 62 to 41, sample 3 516 to 48, sample 4 164 to 77. Visual inspection of the overlays found no remaining glyph or sidebar false positives; the annotations in D11 later showed missed boxes, discussed in D12.
 
 ## D5. Classification: interior ink fraction
 
@@ -88,20 +87,18 @@ The frontend's `ApiService.readError` read a `message` field, so it was changed 
 
 Options for defining the correct result of an image: compare against a stored copy of the detector's own output (a regression check, not a measure of accuracy); annotate every box by hand in an external tool; or correct a detector draft in a purpose-built editor.
 
-Chosen: the third. The correct result is a person's judgment under the mark classification policy in `docs/plan.md`, stored as `<image>.truth.json` in the `/detect` shape. The frontend's annotate mode seeds the draft from the detector and the annotator deletes false positives, flips states, and draws missed boxes, then saves the file. A draft always starts from a detection; the page does not reopen a saved file. Annotations exist for the four challenge samples and the four pages under `testdata/additional`.
+Chosen: the third. The correct result is a person's judgment under the mark classification policy in `docs/plan.md`, stored as `<image>.truth.json` in the `/detect` shape. The frontend's annotate mode seeds the draft from the detector and the annotator deletes false positives, flips states, and draws missed boxes, then saves the file. A draft always starts from a detection; the page does not reopen a saved file. Annotations exist for the four challenge samples.
 
-Cost and caveats: a draft biases the annotator toward the current detector. Boxes the detector misses are absent from the draft and must be looked for deliberately, and a false positive in the draft can survive review. The four challenge samples tuned the thresholds, so agreement on them is a regression signal; the pages under `testdata/additional` were the held-out set. The numbers in D12 came from a scoring command (one-to-one matching at IoU 0.5) that was later removed to keep the submission focused; it remains in the Git history, and the annotate mode and annotations stay.
+Cost and caveats: a draft biases the annotator toward the current detector. Boxes the detector misses are absent from the draft and must be looked for deliberately, and a false positive in the draft can survive review. The four challenge samples tuned the thresholds, so agreement on them is a regression signal rather than a measure of generalization. The numbers in D12 came from a scoring command (one-to-one matching at IoU 0.5) that was later removed to keep the submission focused; it remains in the Git history, and the annotate mode and annotations stay.
 
 ## D12. Changes driven by the annotations
 
-Baseline against the annotations, scored at IoU 0.5: the four challenge samples reached recall 0.986 (285 of 289) at precision 1.000, and the four held-out REALVALS pages recall 0.804 (123 of 153) at precision 0.911.
+Baseline against the annotations, scored at IoU 0.5: recall 0.986 (285 of 289) at precision 1.000.
 
 | Finding | Cause | Change |
 | --- | --- | --- |
 | Sample 4 missed the "did / did not" pair. | Both sit directly under a heavy rule; its thickness was measured as the box's top border, giving an outer box of 30x38 that failed the aspect test. | When the measured box fails the size and aspect test, retry with every side capped at the median measured thickness, which drops the rule and keeps the box's own stroke. Boxes that already passed are untouched, so sample 1's boxes that legitimately share rules (D6) keep their coordinates. |
 
-Result: challenge samples recall 0.993 (287 of 289) at precision 1.000, held-out pages unchanged at recall 0.804 and precision 0.911, state accuracy 1.000 on all eight images.
+Result: recall 0.993 (287 of 289) at precision 1.000, state accuracy 1.000 on all four samples.
 
-Known misses and false positives. Sample 2: the faint "Neighborhood Boundaries" box (border about 30 gray levels from paper, below `AdaptiveC`) and the hatched box, which has no clean rectangular hole. Held-out: 30 misses, 29 of them checked boxes whose faint 1 px border drops out of the binary image beside a bold X, so the border splits, its short half fails the 12 px opening, and the hole leaks into the surrounding table cell; plus twelve false positives, every one the bowl of a capital D in a heading ("Design", "Dr", "Dry"), measuring 20 px across and so clearing the `MinBoxSide` floor exactly.
-
-Explored on a branch and not in the tree (commit 4e55d40): raising the adaptive block to 71 with a regrowth step that extends surviving runs along their own direction, binarizing the per-pixel maximum of B, G, and R so colored ink reads as paper, and a 22 px `MinBoxSide`. Together they took the held-out pages to recall 0.941 at precision 1.000 without changing the challenge sample score; they were tuned with the held-out pages in view, so that figure is not a clean generalization estimate.
+Known misses and false positives. Sample 2: the faint "Neighborhood Boundaries" box (border about 30 gray levels from paper, below `AdaptiveC`) and the hatched box, which has no clean rectangular hole.

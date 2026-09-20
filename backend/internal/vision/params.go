@@ -46,17 +46,9 @@ type Params struct {
 	// MinInteriorFraction is the minimum share of the outer box area taken by
 	// the interior. A checkbox is a thin ring around empty space, so it is
 	// mostly interior even when it shares an edge with a table rule. The
-	// bowls of bold glyphs (o, d, a) and letters cut out of dark bars are
-	// mostly stroke and score well below one half.
+	// bowls of bold glyphs (o, d, a) are mostly stroke and score well below
+	// one half.
 	MinInteriorFraction float64
-
-	// SurroundBand is the width in pixels of the ring examined just outside
-	// the outer box, and MinSurroundGray (0-255) is the minimum mean gray
-	// level of that ring. Checkboxes sit on paper, so the ring is bright; a
-	// hole punched into a dark header bar or sidebar (white text on a dark
-	// background) is surrounded by ink.
-	SurroundBand    int
-	MinSurroundGray float64
 
 	// InteriorMargin is the fraction of the shorter interior side trimmed from
 	// each edge before measuring ink, so anti-aliased border pixels do not
@@ -86,8 +78,6 @@ func DefaultParams() Params {
 		MinRectangularity:   0.85,
 		MaxBorderThickness:  8,
 		MinInteriorFraction: 0.5,
-		SurroundBand:        4,
-		MinSurroundGray:     128,
 		InteriorMargin:      0.12,
 		FillThreshold:       0.04,
 		DedupeIoU:           0.7,

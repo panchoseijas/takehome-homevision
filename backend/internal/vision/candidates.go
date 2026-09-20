@@ -8,8 +8,7 @@ import (
 	"gocv.io/x/gocv"
 )
 
-func (d *Detector) findCandidates(gray, ink, ruling gocv.Mat) []Box {
-	bounds := image.Rect(0, 0, gray.Cols(), gray.Rows())
+func (d *Detector) findCandidates(ink, ruling gocv.Mat) []Box {
 	hierarchy := gocv.NewMat()
 	defer hierarchy.Close()
 	contours := gocv.FindContoursWithParams(ruling, &hierarchy, gocv.RetrievalCComp, gocv.ChainApproxSimple)
@@ -37,7 +36,7 @@ func (d *Detector) findCandidates(gray, ink, ruling gocv.Mat) []Box {
 			border = capAtMedian(border)
 			outer = expand(interior, border)
 		}
-		if !d.plausibleBox(outer) || !d.mostlyHollow(interior, outer) || !d.onLightBackground(gray, outer, bounds) {
+		if !d.plausibleBox(outer) || !d.mostlyHollow(interior, outer) {
 			continue
 		}
 
@@ -117,23 +116,6 @@ func (d *Detector) mostlyHollow(interior, outer image.Rectangle) bool {
 	return float64(interior.Dx()*interior.Dy())/float64(outerArea) >= d.params.MinInteriorFraction
 }
 
-func (d *Detector) onLightBackground(gray gocv.Mat, outer, bounds image.Rectangle) bool {
-	neighborhood := outer.Inset(-d.params.SurroundBand).Intersect(bounds)
-	inner := outer.Intersect(bounds)
-	ringArea := neighborhood.Dx()*neighborhood.Dy() - inner.Dx()*inner.Dy()
-	if ringArea <= 0 {
-		return false
-	}
-
-	neighborhoodRegion := gray.Region(neighborhood)
-	defer neighborhoodRegion.Close()
-	innerRegion := gray.Region(inner)
-	defer innerRegion.Close()
-
-	neighborhoodSum := neighborhoodRegion.Mean().Val1 * float64(neighborhood.Dx()*neighborhood.Dy())
-	innerSum := innerRegion.Mean().Val1 * float64(inner.Dx()*inner.Dy())
-	return (neighborhoodSum-innerSum)/float64(ringArea) >= d.params.MinSurroundGray
-}
 
 func runLength(mask gocv.Mat, x, y, dx, dy, limit int) int {
 	inMask := func(x, y int) bool {
