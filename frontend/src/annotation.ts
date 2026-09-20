@@ -1,6 +1,6 @@
 import type { DetectedBox } from "./detection.ts";
 
-export type AnnotatedBox = DetectedBox & { ambiguous?: boolean };
+export type AnnotatedBox = DetectedBox;
 
 export type ImageSize = { width: number; height: number };
 
@@ -44,12 +44,6 @@ export function truthFileName(imageName: string): string {
 export function serializeTruth(boxes: AnnotatedBox[]): string {
   const lines = boxes
     .toSorted((a, b) => a.bbox[1] - b.bbox[1] || a.bbox[0] - b.bbox[0])
-    .map(({ bbox, is_checked, ambiguous }) =>
-      JSON.stringify(
-        ambiguous
-          ? { bbox, is_checked, ambiguous: true }
-          : { bbox, is_checked },
-      ),
-    );
+    .map(({ bbox, is_checked }) => JSON.stringify({ bbox, is_checked }));
   return `{"boxes": [\n${lines.map((line) => `  ${line}`).join(",\n")}\n]}\n`;
 }

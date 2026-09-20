@@ -38,17 +38,17 @@ test("names the truth file after the image", () => {
   assert.equal(truthFileName("sample2-crop.jpeg"), "sample2-crop.truth.json");
 });
 
-test("serializes boxes in reading order with ambiguous only when set", () => {
+test("serializes boxes in reading order with checked and unchecked states", () => {
   const text = serializeTruth([
-    { bbox: [50, 10, 70, 30], is_checked: true, ambiguous: false },
-    { bbox: [5, 40, 25, 60], is_checked: false, ambiguous: true },
+    { bbox: [50, 10, 70, 30], is_checked: true },
+    { bbox: [5, 40, 25, 60], is_checked: false },
     { bbox: [10, 10, 30, 30], is_checked: false },
   ]);
   assert.deepEqual(JSON.parse(text), {
     boxes: [
       { bbox: [10, 10, 30, 30], is_checked: false },
       { bbox: [50, 10, 70, 30], is_checked: true },
-      { bbox: [5, 40, 25, 60], is_checked: false, ambiguous: true },
+      { bbox: [5, 40, 25, 60], is_checked: false },
     ],
   });
   assert.equal(text.split("\n").length, 6);

@@ -53,7 +53,7 @@ Options: ink fraction of the interior in the binary image; mean darkness of the 
 
 Chosen: ink fraction of the interior after trimming 12% from each edge, measured on the binary image from D2 rather than on the ruling mask, with `FillThreshold` 0.04. Marks of any shape count, which matches the labeling policy (X, tick, slash, and fill are all "checked"). Grayscale darkness is sensitive to shading; diagonal detection over-fits X marks.
 
-Observed separation on the samples: every unchecked box scored 0.000 and the lowest checked box scored 0.111, so the threshold has a wide margin on this data. The hatched box in sample 2 (Electricity, Public) has no clean rectangular hole and is not detected; the annotations label it `unchecked, ambiguous`.
+Observed separation on the samples: every unchecked box scored 0.000 and the lowest checked box scored 0.111, so the threshold has a wide margin on this data. The hatched box in sample 2 (Electricity, Public) has no clean rectangular hole and is not detected; the annotations label it `unchecked`.
 
 ## D6. Coordinates
 
@@ -88,9 +88,9 @@ The frontend's `ApiService.readError` read a `message` field, so it was changed 
 
 Options for defining the correct result of an image: compare against a stored copy of the detector's own output (a regression check, not a measure of accuracy); annotate every box by hand in an external tool; or correct a detector draft in a purpose-built editor.
 
-Chosen: the third. The correct result is a person's judgment under the mark classification policy in `docs/plan.md`, stored as `<image>.truth.json` in the `/detect` shape plus an `ambiguous` flag. The frontend's annotate mode seeds the draft from the detector and the annotator deletes false positives, flips states, and draws missed boxes, then saves the file. A draft always starts from a detection; the page does not reopen a saved file. Annotations exist for the four challenge samples and the four pages under `testdata/additional`.
+Chosen: the third. The correct result is a person's judgment under the mark classification policy in `docs/plan.md`, stored as `<image>.truth.json` in the `/detect` shape. The frontend's annotate mode seeds the draft from the detector and the annotator deletes false positives, flips states, and draws missed boxes, then saves the file. A draft always starts from a detection; the page does not reopen a saved file. Annotations exist for the four challenge samples and the four pages under `testdata/additional`.
 
-Cost and caveats: a draft biases the annotator toward the current detector. Boxes the detector misses are absent from the draft and must be looked for deliberately, and a false positive in the draft can survive review. Ambiguous boxes must be found but accept either state. The four challenge samples tuned the thresholds, so agreement on them is a regression signal; the pages under `testdata/additional` were the held-out set. The numbers in D12 came from a scoring command (one-to-one matching at IoU 0.5) that was later removed to keep the submission focused; it remains in the Git history, and the annotate mode and annotations stay.
+Cost and caveats: a draft biases the annotator toward the current detector. Boxes the detector misses are absent from the draft and must be looked for deliberately, and a false positive in the draft can survive review. The four challenge samples tuned the thresholds, so agreement on them is a regression signal; the pages under `testdata/additional` were the held-out set. The numbers in D12 came from a scoring command (one-to-one matching at IoU 0.5) that was later removed to keep the submission focused; it remains in the Git history, and the annotate mode and annotations stay.
 
 ## D12. Changes driven by the annotations
 

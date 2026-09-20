@@ -24,7 +24,7 @@
   {"bbox":[842,491,866,518],"is_checked":false},
   {"bbox":[1098,521,1122,548],"is_checked":true},
   {"bbox":[1186,521,1211,548],"is_checked":false},
-  {"bbox":[196,613,220,636],"is_checked":false,"ambiguous":true},
+  {"bbox":[196,613,220,636],"is_checked":false},
   {"bbox":[275,613,299,639],"is_checked":true},
   {"bbox":[677,613,701,639],"is_checked":true},
   {"bbox":[756,613,780,639],"is_checked":false},

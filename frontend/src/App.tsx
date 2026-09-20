@@ -32,8 +32,6 @@ export default function App() {
   });
   const error = message || detection.error?.message;
 
-  // A blob URL outlives the File it came from, so release it as it is replaced.
-  // The last one is released with the page.
   function openImage(next: File | null) {
     if (image) URL.revokeObjectURL(image.preview);
     setImage(next && { file: next, preview: URL.createObjectURL(next) });
@@ -41,7 +39,6 @@ export default function App() {
     setZoom(1);
   }
 
-  // A rejected file leaves the open image and its boxes untouched.
   function selectFiles(files: File[]) {
     if (files.length === 0) return;
     const invalid =
@@ -108,7 +105,6 @@ export default function App() {
           annotating={annotations.annotating}
           selected={annotations.selected}
           onToggleChecked={annotations.toggleChecked}
-          onToggleAmbiguous={annotations.toggleAmbiguous}
           onDelete={annotations.remove}
         />
         <ImageStage
