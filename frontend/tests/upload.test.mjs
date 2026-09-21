@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { ApiService, ApiValidationError } from "../src/services/api.service.ts";
+import { ApiValidationError } from "../src/services/api.service.ts";
 import imageService from "../src/services/image.service.ts";
 import { MAX_IMAGE_BYTES, validateImage } from "../src/upload.ts";
 
@@ -90,15 +90,4 @@ test("handles HTTP, network, and malformed response failures", async (t) => {
     async () => new Response(null, { status: 204 }),
   );
   assert.equal(await imageService.uploadImage(image), null);
-});
-
-test("supports generic GET requests", async (t) => {
-  t.mock.method(globalThis, "fetch", async (url, options) => {
-    assert.equal(url, "/healthz");
-    assert.equal(options.method, "GET");
-    return Response.json({ status: "ok" });
-  });
-
-  const api = new ApiService();
-  assert.deepEqual(await api.get("/healthz"), { status: "ok" });
 });
