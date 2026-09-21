@@ -59,7 +59,7 @@ The boxes and their edits live in `src/useAnnotations.ts`, a hook that owns the 
 
 - `POST /detect`, multipart form data with one file named `image`.
 - Expects a JSON success response (for example `{"boxes":[]}`), or HTTP 204 without a body.
-- 4xx responses display the backend's `error` message, or the HTTP status when the body has none. 5xx responses, including 503 when the backend is busy, display "Server error". Network errors and malformed responses display errors.
+- 4xx responses display the backend's `error` message, or the HTTP status when the body has none. 5xx responses display "Server error". Network errors and malformed responses display errors.
 - The frontend accepts PNG/JPEG up to 10 MiB. This is a client usability limit, not server validation; the backend validates input independently and accepts up to 20 MiB.
 - Selecting another file clears the response. Requests do not automatically retry.
 

@@ -7,5 +7,12 @@
 # Submission archive
 *.zip
 
-# Third-party Go agent skills (samber/cc-skills-golang), installed locally
+# Python
+.venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Agent skills installed locally
 .claude/skills/
