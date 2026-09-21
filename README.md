@@ -2,6 +2,17 @@
 
 Detect and annotate checkboxes in document images with a React frontend and a Go/OpenCV backend.
 
+## Live demo
+
+No installation needed:
+
+- App: https://homevision.jfseijas.com.ar. Upload a PNG or JPEG (the samples are in [`backend/testdata`](backend/testdata)) and click **Detect checkboxes**.
+- API: https://api.homevision.jfseijas.com.ar
+
+```sh
+curl -F image=@backend/testdata/sample1-urar-page1.png https://api.homevision.jfseijas.com.ar/detect
+```
+
 ## Run with Docker
 
 Install Docker with Compose (Docker Desktop includes both), then run from this directory:

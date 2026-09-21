@@ -1,0 +1,8 @@
+# Caddy obtains and renews a Let's Encrypt certificate for each hostname.
+homevision.jfseijas.com.ar {
+	reverse_proxy frontend:80
+}
+
+api.homevision.jfseijas.com.ar {
+	reverse_proxy backend:8080
+}
