@@ -56,6 +56,7 @@ class Box:
 
 
 def finalize(candidates: list[Box], bounds: Rect, dedupe_iou: float) -> list[Box]:
+    """Clip boxes to the bounds, drop empty ones, and remove duplicates by IoU."""
     clamped = [
         replace(box, rect=rect)
         for box in candidates
@@ -75,6 +76,7 @@ def dedupe(boxes: list[Box], threshold: float) -> list[Box]:
 
 
 def iou(a: Rect, b: Rect) -> float:
+    """Intersection over union of two rectangles."""
     inter = a.intersect(b)
     if inter.empty:
         return 0.0
