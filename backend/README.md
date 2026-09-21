@@ -57,7 +57,7 @@ curl -F image=@testdata/sample2-neighborhood-site-crop.jpeg http://localhost:808
 - `is_checked` is true when the interior carries a mark (X, tick, slash, or fill).
 - Boxes are sorted top-to-bottom, then left-to-right. No checkboxes yields `{"boxes":[]}`.
 
-Add `?debug=1` for per-box diagnostics used by the inspection frontend:
+Add `?debug=1` for per-box diagnostics that explain each classification (the frontend does not request them):
 
 ```sh
 curl -F image=@testdata/sample2-neighborhood-site-crop.jpeg 'http://localhost:8080/detect?debug=1'
@@ -92,7 +92,7 @@ Green rectangles are checked boxes, red are unchecked. Detection time and box co
 - `cmd/server`: HTTP server assembly, flags, graceful shutdown.
 - `cmd/detect`: command-line runner and overlay writer.
 - `internal/httpapi`: upload validation, limits, JSON contract.
-- `internal/vision`: the detector. `params.go` holds every tunable with its rationale; `detector.go` is the pipeline; `candidates.go` filters and classifies; `boxes.go` clamps, deduplicates, and sorts.
+- `internal/vision`: the detector. `params.go` holds every tunable (rationale in `../docs/decisions.md`, D2-D6); `detector.go` is the pipeline; `candidates.go` filters and classifies; `boxes.go` clamps, deduplicates, and sorts.
 - `testdata`: the four sample documents from the challenge.
 
-Tests draw synthetic forms with OpenCV to cover marks, table grids, shading, nested borders, dark sidebars, ordering, and invalid input, and run a smoke test over the samples. Production follow-ups are marked `TODO(prod)` in the code (`git grep 'TODO(prod)'`); the detector's known limitations are listed in `../docs/decisions.md` (D10).
+Tests draw synthetic forms with OpenCV to cover marks, box sizes, table grids, shading, heavy rules, nested borders, ordering, and invalid input, and check the four samples against their hand-made annotations (`testdata/*.truth.json`): every detection must match an annotated box at IoU 0.5 with the right state, and only the two known misses in sample 2 are tolerated. Production follow-ups are marked `TODO(prod)` in the code (`git grep 'TODO(prod)'`); the detector's known limitations are listed in `../docs/decisions.md` (D10).

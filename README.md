@@ -52,6 +52,6 @@ Holes are then filtered by size, squareness, rectangularity, and border thicknes
 
 ![Detected boxes](docs/pipeline/5-result.png)
 
-Every threshold lives in [`backend/internal/vision/params.go`](backend/internal/vision/params.go) with its rationale, and [docs/decisions.md](docs/decisions.md) covers the tradeoffs.
+Every threshold lives in [`backend/internal/vision/params.go`](backend/internal/vision/params.go), and [docs/decisions.md](docs/decisions.md) covers the rationale behind each value and the tradeoffs.
 
 See [backend/README.md](backend/README.md) and [frontend/README.md](frontend/README.md) for the API, local development, and tests.
