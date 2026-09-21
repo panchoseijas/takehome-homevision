@@ -38,7 +38,3 @@ class DetectResponse(BaseModel):
                 for box in boxes
             ]
         )
-
-
-class ErrorResponse(BaseModel):
-    error: str

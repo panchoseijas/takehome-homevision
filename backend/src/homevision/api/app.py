@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from homevision.api.limits import UploadLimitMiddleware
-from homevision.api.schemas import DetectResponse, ErrorResponse
+from homevision.api.schemas import DetectResponse
 from homevision.vision import (
     Box,
     CorruptImageError,
@@ -46,20 +46,17 @@ IMAGE_ERRORS: dict[type[ImageError], tuple[int, str]] = {
     CorruptImageError: (status.HTTP_400_BAD_REQUEST, "image could not be decoded"),
 }
 
-ERROR_RESPONSES: dict[int | str, dict[str, object]] = {
-    code: {"model": ErrorResponse, "description": description}
-    for code, description in {
-        400: "Not multipart, missing `image` field, or image data that fails to decode",
-        413: "Body over the upload limit, or image area over the pixel limit",
-        415: "File is not PNG or JPEG",
-    }.items()
-}
-
 
 def create_app(detector: DetectorLike, config: Config | None = None) -> FastAPI:
     config = config or Config()
 
-    app = FastAPI(title="HomeVision checkbox detection")
+    # The generated API docs and schema are not served.
+    app = FastAPI(
+        title="HomeVision checkbox detection",
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
+    )
     app.add_middleware(UploadLimitMiddleware, max_bytes=config.max_upload_bytes)
 
     @app.exception_handler(StarletteHTTPException)
@@ -71,7 +68,7 @@ def create_app(detector: DetectorLike, config: Config | None = None) -> FastAPI:
         return JSONResponse({"error": upload_error_message(request, exc)}, 400)
 
     # TODO(prod): add authentication and rate limiting
-    @app.post("/detect", response_model_exclude_none=True, responses=ERROR_RESPONSES)
+    @app.post("/detect", response_model_exclude_none=True)
     async def detect(
         image: UploadFile,
         debug: Annotated[bool, Query(description="Include per-box diagnostics")] = False,

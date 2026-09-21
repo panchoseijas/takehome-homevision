@@ -21,8 +21,6 @@ uv run homevision-server       # listens on 0.0.0.0:8080
 uv run homevision-server --host 127.0.0.1 --port 9000
 ```
 
-With the server running, interactive API docs are at http://localhost:8080/docs.
-
 ## API
 
 ### `POST /detect`
