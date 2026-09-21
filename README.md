@@ -1,6 +1,6 @@
 # HomeVision
 
-Detect and annotate checkboxes in document images with a React frontend and a Go/OpenCV backend.
+Detect and annotate checkboxes in document images with a React frontend and a Python/OpenCV backend.
 
 See [Approach and tradeoffs](docs/approach.md) for a brief writeup of the architectural decisions and validation approach.
 
@@ -69,14 +69,14 @@ Holes are then filtered by size, squareness, rectangularity, and border thicknes
 
 ![Detected boxes](docs/pipeline/5-result.png)
 
-Every threshold lives in `[backend/internal/vision/params.go](backend/internal/vision/params.go)`.
+Every threshold lives in `[backend/src/homevision/vision/params.py](backend/src/homevision/vision/params.py)`.
 
 ## Known limitations
 
 Against the hand-made annotations of the four samples, the detector finds 287 of 289 checkboxes at IoU 0.5 with no false positives and every state correct. Beyond that:
 
 - **Two misses in sample 2.** The "Neighborhood Boundaries" box is too faint for the adaptive threshold (its border is about 30 gray levels from the paper), and the hatched box has no clean rectangular hole.
-- **Solid or densely hatched fills are missed** for the same reason: without a hole there is no candidate (`TestDetectMissesSolidFill` documents this). No sample contains one.
+- **Solid or densely hatched fills are missed** for the same reason: without a hole there is no candidate (`test_misses_solid_fill` documents this). No sample contains one.
 - **Skew and rotation are untested.** Tilted scans shorten the straight runs the ruling mask depends on; the supported range has not been measured.
 - **Tuned on the four samples.** The thresholds were set by inspecting them, so agreement there is a regression check, not evidence of accuracy on unseen documents. Box sizes are absolute pixels and cover roughly 100-300 DPI letter pages.
 - **Production controls are deferred.** Authentication, per-client rate limiting, and confidence-based review are not implemented.

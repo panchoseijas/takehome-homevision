@@ -1,20 +1,17 @@
-# Build with Go and OpenCV, then copy only what the server needs to run.
-FROM ghcr.io/hybridgroup/opencv:4.13.0 AS build
-# Download the Go version required by go.mod when the base image is older.
-ENV GOTOOLCHAIN=auto
+# Install locked dependencies with uv, then copy only the virtual environment.
+FROM python:3.13-slim AS build
+COPY --from=ghcr.io/astral-sh/uv:0.12 /uv /bin/uv
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 WORKDIR /app
-COPY go.mod go.sum ./
-RUN go mod download
-COPY . .
-RUN go build -ldflags="-s -w" -o /server ./cmd/server
-# ldd lists the shared libraries, including their transitive dependencies.
-RUN mkdir /runtime && ldd /server | awk '/=> \// {print $3} $1 ~ /^\// {print $1}' \
-    | xargs -r cp --parents --dereference --target-directory=/runtime
+# Dependencies change less often than the source, so they get their own layer.
+COPY pyproject.toml uv.lock ./
+RUN uv sync --locked --no-dev --no-install-project
+COPY src ./src
+RUN uv sync --locked --no-dev --no-editable
 
-FROM debian:bookworm-slim
-COPY --from=build /runtime/lib/ /lib/
-COPY --from=build /runtime/lib64/ /lib64/
-COPY --from=build /runtime/usr/local/lib/ /usr/local/lib/
-COPY --from=build /server /server
-RUN ldconfig
-CMD ["/server"]
+FROM python:3.13-slim
+COPY --from=build /app/.venv /app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
+USER nobody
+EXPOSE 8080
+CMD ["homevision-server"]
