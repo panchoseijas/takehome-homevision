@@ -82,7 +82,6 @@ def create_app(detector: DetectorLike, config: Config | None = None) -> FastAPI:
 
         started = time.perf_counter()
         try:
-            # OpenCV releases the GIL, so detections run in parallel on the thread pool.
             # TODO(prod): cap concurrent detections with a semaphore and return 503 with
             # Retry-After when the wait times out
             boxes = await run_in_threadpool(detector.detect, data)
@@ -99,7 +98,6 @@ def create_app(detector: DetectorLike, config: Config | None = None) -> FastAPI:
         )
 
         # TODO(prod): store the image (S3) and result with detector version (DB) for evaluation;
-        # mind PII and retention
         return DetectResponse.from_boxes(boxes, include_debug=debug)
 
     return app

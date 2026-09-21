@@ -12,13 +12,9 @@ That is all: `uv sync` downloads Python 3.13 if it is missing and installs the l
 
 ```sh
 cd backend
-uv sync                        # create .venv from uv.lock
-uv run ruff format --check .   # formatting
-uv run ruff check .            # lint
-uv run mypy                    # strict type check
+uv sync                    # create .venv from uv.lock
 uv run pytest
-uv run homevision-server       # listens on 0.0.0.0:8080
-uv run homevision-server --host 127.0.0.1 --port 9000
+uv run homevision-server   # listens on 0.0.0.0:8080
 ```
 
 ## API
@@ -51,11 +47,11 @@ curl -F image=@testdata/sample2-neighborhood-site-crop.jpeg 'http://localhost:80
 
 Errors are JSON, `{"error":"..."}`:
 
-| Status | Cause |
-| --- | --- |
-| 400 | Not multipart, missing `image` field, invalid `debug` value, or image data that fails to decode |
-| 413 | Body over 20 MiB, or image area over 25 megapixels |
-| 415 | File is not PNG or JPEG |
+| Status | Cause                                                                                           |
+| ------ | ----------------------------------------------------------------------------------------------- |
+| 400    | Not multipart, missing `image` field, invalid `debug` value, or image data that fails to decode |
+| 413    | Body over 20 MiB, or image area over 25 megapixels                                              |
+| 415    | File is not PNG or JPEG                                                                         |
 
 ## Command-line detector
 
