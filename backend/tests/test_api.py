@@ -186,7 +186,13 @@ def test_upload_limit_counts_bodies_without_content_length() -> None:
 
 @pytest.mark.parametrize(
     ("method", "path", "want_status"),
-    [("GET", "/detect", 405), ("GET", "/", 404)],
+    [
+        ("GET", "/detect", 405),
+        ("GET", "/", 404),
+        ("GET", "/docs", 404),
+        ("GET", "/redoc", 404),
+        ("GET", "/openapi.json", 404),
+    ],
 )
 def test_unknown_routes_return_json_errors(method: str, path: str, want_status: int) -> None:
     response = TestClient(create_app(FakeDetector())).request(method, path)
