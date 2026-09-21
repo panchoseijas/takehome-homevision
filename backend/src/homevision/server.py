@@ -1,6 +1,5 @@
 import argparse
 import logging
-import os
 
 import uvicorn
 
@@ -15,21 +14,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Serve the checkbox detection API.")
     parser.add_argument("--host", default="0.0.0.0", help="address to listen on")
     parser.add_argument("--port", type=int, default=8080, help="TCP port to listen on")
-    parser.add_argument(
-        "--max-concurrent",
-        type=int,
-        default=os.cpu_count() or 1,
-        help="maximum detections running at once",
-    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
     params = Params()
-    app = create_app(
-        Detector(params),
-        Config(max_pixels=params.max_pixels, max_concurrent=args.max_concurrent),
-    )
+    app = create_app(Detector(params), Config(max_pixels=params.max_pixels))
     # uvicorn drains in-flight requests on SIGINT/SIGTERM before exiting.
     uvicorn.run(
         app,

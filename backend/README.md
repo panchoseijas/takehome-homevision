@@ -18,10 +18,10 @@ uv run ruff check .            # lint
 uv run mypy                    # strict type check
 uv run pytest
 uv run homevision-server       # listens on 0.0.0.0:8080
-uv run homevision-server --host 127.0.0.1 --port 9000 --max-concurrent 2
+uv run homevision-server --host 127.0.0.1 --port 9000
 ```
 
-`--max-concurrent` caps detections running at once (default: number of CPUs); extra requests wait up to 5 s and then receive 503. With the server running, interactive API docs are at http://localhost:8080/docs.
+With the server running, interactive API docs are at http://localhost:8080/docs.
 
 ## API
 
@@ -58,7 +58,6 @@ Errors are JSON, `{"error":"..."}`:
 | 400 | Not multipart, missing `image` field, invalid `debug` value, or image data that fails to decode |
 | 413 | Body over 20 MiB, or image area over 25 megapixels |
 | 415 | File is not PNG or JPEG |
-| 503 | All detection slots busy for 5 s (`Retry-After` is set) |
 
 ## Command-line detector
 
@@ -90,4 +89,4 @@ These rules define the intended labels, not guaranteed detector behavior; solid 
 - `tests`: `test_detector.py`, `test_api.py`, and `page.py`, the synthetic form drawer.
 - `testdata`: the four sample documents from the challenge.
 
-Tests draw synthetic forms with OpenCV to cover marks, box sizes, table grids, shading, heavy rules, nested borders, ordering, and invalid input, and check the four samples against their hand-made annotations (`testdata/*.truth.json`): every detection must match an annotated box at IoU 0.5 with the right state, and only the two known misses in sample 2 are tolerated. API tests cover the response contract, every error status, the upload limit with and without `Content-Length`, and the 503 path with a blocked detector. Production follow-ups are marked `TODO(prod)` in the code (`git grep 'TODO(prod)'`); the detector's known limitations are listed in the [root README](../README.md#known-limitations).
+Tests draw synthetic forms with OpenCV to cover marks, box sizes, table grids, shading, heavy rules, nested borders, ordering, and invalid input, and check the four samples against their hand-made annotations (`testdata/*.truth.json`): every detection must match an annotated box at IoU 0.5 with the right state, and only the two known misses in sample 2 are tolerated. API tests cover the response contract, every error status, and the upload limit with and without `Content-Length`. Production follow-ups are marked `TODO(prod)` in the code (`git grep 'TODO(prod)'`); the detector's known limitations are listed in the [root README](../README.md#known-limitations).

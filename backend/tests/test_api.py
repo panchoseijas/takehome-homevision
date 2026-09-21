@@ -1,9 +1,6 @@
-import asyncio
-import threading
 from collections.abc import Callable
 
 import cv2
-import httpx2 as httpx
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
@@ -35,14 +32,9 @@ class FakeDetector:
         self.boxes = boxes or []
         self.error = error
         self.inputs: list[bytes] = []
-        self.started = threading.Event()
-        self.release = threading.Event()
-        self.release.set()
 
     def detect(self, data: bytes) -> list[Box]:
         self.inputs.append(data)
-        self.started.set()
-        self.release.wait(timeout=5)
         if self.error:
             raise self.error
         return self.boxes
@@ -216,33 +208,6 @@ def test_maps_detector_errors(error: Exception, want_status: int) -> None:
     response = client.post("/detect", files=upload(encode(".png", 8, 8)))
     assert response.status_code == want_status
     assert "exploded" not in response.text, "internal error details leaked"
-
-
-def test_returns_busy_when_slots_are_taken() -> None:
-    detector = FakeDetector()
-    detector.release.clear()
-    app = create_app(detector, Config(max_concurrent=1, queue_timeout_seconds=0.05))
-    content = encode(".png", 8, 8)
-
-    async def scenario() -> None:
-        transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-            first = asyncio.create_task(client.post("/detect", files={"image": content}))
-            await asyncio.to_thread(detector.started.wait, 1)
-
-            second = await client.post("/detect", files={"image": content})
-            assert second.status_code == 503
-            assert second.json() == {"error": "server is busy, retry shortly"}
-            assert "retry-after" in second.headers
-
-            detector.release.set()
-            assert (await first).status_code == 200
-
-            # The slot is released, so a new request goes through.
-            third = await client.post("/detect", files={"image": content})
-            assert third.status_code == 200
-
-    asyncio.run(scenario())
 
 
 def test_detects_a_real_sample_end_to_end() -> None:

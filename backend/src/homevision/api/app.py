@@ -1,8 +1,6 @@
-import asyncio
 import logging
-import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Annotated, Protocol
 
 from fastapi import FastAPI, HTTPException, Query, Request, UploadFile, status
@@ -34,9 +32,6 @@ class DetectorLike(Protocol):
 class Config:
     max_upload_bytes: int = 20 << 20
     max_pixels: int = Params().max_pixels
-    # Detections running at once. OpenCV releases the GIL, so they run in parallel threads.
-    max_concurrent: int = field(default_factory=lambda: os.cpu_count() or 1)
-    queue_timeout_seconds: float = 5.0
 
 
 IMAGE_ERRORS: dict[type[ImageError], tuple[int, str]] = {
@@ -57,14 +52,12 @@ ERROR_RESPONSES: dict[int | str, dict[str, object]] = {
         400: "Not multipart, missing `image` field, or image data that fails to decode",
         413: "Body over the upload limit, or image area over the pixel limit",
         415: "File is not PNG or JPEG",
-        503: "All detection slots busy; `Retry-After` is set",
     }.items()
 }
 
 
 def create_app(detector: DetectorLike, config: Config | None = None) -> FastAPI:
     config = config or Config()
-    slots = asyncio.Semaphore(config.max_concurrent)
 
     app = FastAPI(title="HomeVision checkbox detection")
     app.add_middleware(UploadLimitMiddleware, max_bytes=config.max_upload_bytes)
@@ -90,26 +83,17 @@ def create_app(detector: DetectorLike, config: Config | None = None) -> FastAPI:
         except ImageError as exc:
             raise image_http_error(exc) from None
 
-        try:
-            async with asyncio.timeout(config.queue_timeout_seconds):
-                await slots.acquire()
-        except TimeoutError:
-            raise HTTPException(
-                status.HTTP_503_SERVICE_UNAVAILABLE,
-                "server is busy, retry shortly",
-                headers={"Retry-After": str(round(config.queue_timeout_seconds))},
-            ) from None
-
         started = time.perf_counter()
         try:
+            # OpenCV releases the GIL, so detections run in parallel on the thread pool.
+            # TODO(prod): cap concurrent detections with a semaphore and return 503 with
+            # Retry-After when the wait times out
             boxes = await run_in_threadpool(detector.detect, data)
         except ImageError as exc:
             raise image_http_error(exc) from None
         except Exception:
             logger.exception("detection failed")
             raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "detection failed") from None
-        finally:
-            slots.release()
         logger.info(
             "detection complete boxes=%d bytes=%d duration_ms=%.1f",
             len(boxes),
