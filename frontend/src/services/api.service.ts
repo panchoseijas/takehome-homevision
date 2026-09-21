@@ -48,6 +48,7 @@ export class ApiService {
   private async request<T>(endpoint: string, init: RequestInit): Promise<T> {
     const response = await fetch(this.baseUrl + endpoint, init);
 
+    // TODO(prod): add a busy backend error handling
     if (response.status >= 500) {
       throw new Error("Server error");
     }

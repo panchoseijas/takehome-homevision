@@ -148,5 +148,6 @@ func (d *Detector) classify(ink gocv.Mat, interior image.Rectangle, debug *Debug
 	debug.InkPixels = gocv.CountNonZero(region)
 	debug.InteriorArea = trimmed.Dx() * trimmed.Dy()
 	debug.FillRatio = float64(debug.InkPixels) / float64(debug.InteriorArea)
+	// TODO(prod): return a confidence score and flag boxes near the threshold for human review
 	return debug.FillRatio >= d.params.FillThreshold
 }

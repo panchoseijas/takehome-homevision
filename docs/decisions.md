@@ -76,12 +76,21 @@ Errors are `{"error": "message"}` with 400, 413, 415, 503, or 500; internal erro
 
 The frontend's `ApiService.readError` read a `message` field, so it was changed to read `error`; that is the only frontend change in this step.
 
-## D10. Known limitations recorded as `TODO(prod)`
+## D10. Known limitations and `TODO(prod)` follow-ups
+
+Detector limitations:
 
 - Boxes filled solid, or with dense horizontal/vertical hatching, have no rectangular hole and are missed (`TestDetectMissesSolidFill` documents this). No sample contains one.
 - Hand-drawn marks beside a box rather than inside it, such as the quadrilateral next to "Water, Other" in sample 2, are not checkboxes and are ignored.
 - Skewed or rotated scans reduce the straight-run mask; the supported skew range has not been measured yet.
 - Thresholds were set by inspecting the four samples and have not been evaluated on held-out documents.
+
+Production work deferred in code, each marked `TODO(prod)` where it applies (`git grep 'TODO(prod)'`):
+
+- Authentication and per-client rate limiting on `POST /detect` (`backend/internal/httpapi/handler.go`).
+- Persisting each input image (S3) and its result with the detector version (database) to build a held-out evaluation set, with encryption and a retention period because appraisal pages carry PII (`backend/internal/httpapi/handler.go`).
+- A confidence score per box, so fill ratios near `FillThreshold` go to human review instead of being forced to checked or unchecked (`backend/internal/vision/candidates.go`).
+- Frontend retry that honors `Retry-After` on 503 (`frontend/src/services/api.service.ts`).
 
 ## D11. Ground truth
 

@@ -64,6 +64,7 @@ func New(detector Detector, config Config) http.Handler {
 	}
 
 	mux := http.NewServeMux()
+	// TODO(prod): add authentication and rate limiting
 	mux.HandleFunc("POST /detect", s.handleDetect)
 	return mux
 }
@@ -122,6 +123,7 @@ func (s *server) handleDetect(w http.ResponseWriter, r *http.Request) {
 		"duration", time.Since(started),
 	)
 
+	// TODO(prod): store the image (S3) and result with detector version (DB) for evaluation; mind PII and retention
 	writeJSON(w, http.StatusOK, NewDetectResponse(boxes, wantsDebug(r)))
 }
 

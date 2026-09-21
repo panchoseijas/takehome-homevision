@@ -95,4 +95,4 @@ Green rectangles are checked boxes, red are unchecked. Detection time and box co
 - `internal/vision`: the detector. `params.go` holds every tunable with its rationale; `detector.go` is the pipeline; `candidates.go` filters and classifies; `boxes.go` clamps, deduplicates, and sorts.
 - `testdata`: the four sample documents from the challenge.
 
-Tests draw synthetic forms with OpenCV to cover marks, table grids, shading, nested borders, dark sidebars, ordering, and invalid input, and run a smoke test over the samples. Known limitations are marked `TODO(prod)` in the code and listed in `../docs/decisions.md`.
+Tests draw synthetic forms with OpenCV to cover marks, table grids, shading, nested borders, dark sidebars, ordering, and invalid input, and run a smoke test over the samples. Production follow-ups are marked `TODO(prod)` in the code (`git grep 'TODO(prod)'`); the detector's known limitations are listed in `../docs/decisions.md` (D10).
