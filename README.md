@@ -12,9 +12,9 @@ docker compose up --build
 
 Open http://localhost:5173, choose an image from `backend/testdata`, and click **Detect checkboxes**. The API is also available at http://localhost:8080.
 
-Compose starts two containers: `backend` builds the Go server using a prebuilt OpenCV image, then copies the binary and required shared libraries into Debian slim; `frontend` runs Vite and forwards `/detect` requests to `http://backend:8080` over Compose's default network. Only Docker is needed locally. The first build downloads dependencies and compiles GoCV, so it can take several minutes; later builds reuse Docker's cache.
+Compose starts two containers: `backend` builds the Go server using a prebuilt OpenCV image, then copies the binary and required shared libraries into Debian slim; `frontend` builds the static files with Node, then serves them with Nginx and forwards `/detect` requests to `http://backend:8080` over Compose's default network. Only Docker is needed locally. The first build downloads dependencies and compiles GoCV, so it can take several minutes; later builds reuse Docker's cache.
 
-This is a local demo setup using Vite's development server. After editing source files, rerun the same command to rebuild. Stop with Ctrl+C, then remove the containers with:
+Docker serves the production frontend build. For live reload during local development, use `npm run dev` in `frontend` instead. After editing source files, rerun the Compose command to rebuild. Stop with Ctrl+C, then remove the containers with:
 
 ```sh
 docker compose down

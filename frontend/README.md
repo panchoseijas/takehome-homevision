@@ -6,6 +6,10 @@ The visual design follows [HomeVision’s landing page](https://homevision.co/):
 
 ## Run
 
+To run the production build and backend together, use `docker compose up --build` from the repository root and open http://localhost:5173. The frontend image uses Node only to build the static files; Nginx serves them and proxies `/detect` to the backend. `nginx.conf` sets the upload limit to match the backend's 20 MiB request limit.
+
+For local development with live reload:
+
 Requires Node.js 22.18+ (or a newer supported release) and npm.
 
 ```sh
