@@ -87,6 +87,16 @@ go run ./cmd/detect -debug -overlay /tmp/sample1.png testdata/sample1-urar-page1
 
 Green rectangles are checked boxes, red are unchecked. Detection time and box count are printed to stderr.
 
+## Annotation policy
+
+The sample annotations use these labeling rules:
+
+- **Checked:** a deliberate dark mark inside a box, including an X, tick, slash, partial stroke, or solid fill.
+- **Unchecked:** an empty box or background shading without a distinct mark. The uniformly hatched "Electricity → Public" box in sample 2 is labeled unchecked.
+- **Ignored:** colored watermark or signature ink, and hand-drawn loops or strokes outside a checkbox.
+
+These rules define the intended labels, not guaranteed detector behavior; solid or densely hatched boxes can be missed.
+
 ## Layout
 
 - `cmd/server`: HTTP server assembly, flags, graceful shutdown.
