@@ -48,7 +48,7 @@ curl -F image=@testdata/sample2-neighborhood-site-crop.jpeg 'http://localhost:80
 ```
 
 ```json
-{"boxes":[{"bbox":[155,96,180,122],"is_checked":false,"debug":{"fill_ratio":0,"ink_pixels":0,"interior_area":225,"border_px":[2,1,2,4]}}, ...]}
+{"boxes":[{"bbox":[155,96,180,122],"is_checked":false,"debug":{"fill_ratio":0.0,"ink_pixels":0,"interior_area":225,"border_px":[2,1,2,4]}}, ...]}
 ```
 
 Errors are JSON, `{"error":"..."}`:
