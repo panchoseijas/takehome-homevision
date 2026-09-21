@@ -8,6 +8,14 @@ type Border = tuple[int, int, int, int]  # left, top, right, bottom
 
 
 def find_candidates(ink: MatLike, ruling: MatLike, params: Params) -> list[Box]:
+    """Turn every box-shaped hole in the ruling mask into a classified Box.
+
+    A checkbox is a small, near-rectangular hole enclosed by ruled lines. Each
+    hole is filtered by size, shape, and border plausibility, then marked
+    checked when enough ink falls inside it.
+    """
+    # RETR_CCOMP yields two levels: outer boundaries and the holes inside them.
+    # A mask with no contours returns hierarchy=None, but the loop never runs.
     contours, hierarchy = cv2.findContours(ruling, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
 
     candidates: list[Box] = []
@@ -43,6 +51,7 @@ def find_candidates(ink: MatLike, ruling: MatLike, params: Params) -> list[Box]:
 
 
 def expand(interior: Rect, border: Border) -> Rect:
+    """Grow the interior by its border thicknesses to get the box's outer edge."""
     left, top, right, bottom = border
     return Rect(interior.x1 - left, interior.y1 - top, interior.x2 + right, interior.y2 + bottom)
 
@@ -56,6 +65,7 @@ def cap_at_median(border: Border) -> Border:
 
 
 def plausible_box(outer: Rect, params: Params) -> bool:
+    """Whether the outer rectangle has checkbox-like size and aspect ratio."""
     if not sides_within(outer, params.min_box_side, params.max_box_side):
         return False
     aspect = outer.width / outer.height
@@ -67,10 +77,12 @@ def sides_within(rect: Rect, min_side: int, max_side: int) -> bool:
 
 
 def rectangularity(contour_area: float, interior: Rect) -> float:
+    """Fraction of the bounding rectangle the hole covers; 1.0 is a perfect rectangle."""
     return min(contour_area / interior.area, 1.0)
 
 
 def measure_border(ruling: MatLike, interior: Rect, max_thickness: int) -> Border:
+    """Measure each side's line thickness, walking outward from the side's midpoint."""
     mid_x = (interior.x1 + interior.x2) // 2
     mid_y = (interior.y1 + interior.y2) // 2
     return (
@@ -93,6 +105,7 @@ def run_length(mask: MatLike, x: int, y: int, dx: int, dy: int, limit: int) -> i
 
 
 def measure_ink(ink: MatLike, interior: Rect, border: Border, interior_margin: float) -> Debug:
+    """Count ink inside the box, skipping a margin so border bleed is not read as a mark."""
     shorter = min(interior.width, interior.height)
     margin = max(round(shorter * interior_margin), 1)
     trimmed = interior.inset(margin)

@@ -9,10 +9,16 @@ from homevision.vision.params import Params
 
 
 class Detector:
+    """Finds checkboxes in a scanned form page and classifies each as checked or not."""
+
     def __init__(self, params: Params | None = None) -> None:
         self.params = params or Params()
 
     def detect(self, data: bytes) -> list[Box]:
+        """Return the checkboxes in a PNG or JPEG, in reading order.
+
+        Raises ImageError for unsupported, oversized, or undecodable input.
+        """
         validate_image(data, self.params.max_pixels)
 
         # Decode the image to grayscale
