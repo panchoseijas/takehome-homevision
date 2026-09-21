@@ -8,13 +8,13 @@ Options: GoCV bindings to OpenCV; a pure Go implementation on the standard libra
 
 Chosen: GoCV, as the plan proposed. OpenCV supplies adaptive thresholding, morphology, and contour extraction with well-known semantics, so the detector is a short pipeline of named operations rather than hand-written image loops that would themselves need validation. Pure Go would remove the native dependency but replace it with a few hundred lines of custom code for the same primitives; a sidecar would split the service across two runtimes for one endpoint.
 
-Cost: a native dependency. Building requires OpenCV installed on the host, and GoCV releases are tied to OpenCV versions. GoCV v0.43.0 documents OpenCV 4.12/4.13; the build here was verified against Homebrew OpenCV 4.14.0 (`gocv.OpenCVVersion()` reports `4.14.0`, all tests pass). The version is pinned in `go.mod`, and a container image remains the fallback run path for the packaging step.
+Cost: a native dependency. Building requires OpenCV installed on the host, and GoCV releases are tied to OpenCV versions. GoCV v0.43.0 documents OpenCV 4.12/4.13; the build here was verified against Homebrew OpenCV 4.14.0 (`gocv.OpenCVVersion()` reports `4.14.0`, all tests pass). The GoCV version is pinned in `go.mod`. Docker Compose is the documented run path so a reviewer needs no local OpenCV; its image builds against OpenCV 4.13.0 (`backend/Dockerfile`).
 
 ## D2. Binarization: adaptive Gaussian threshold
 
 Options: global Otsu threshold; adaptive mean or Gaussian threshold.
 
-Chosen: `AdaptiveThreshold(..., Gaussian, BinaryInv, block 31, C 15)`, so ink is 255 and paper is 0. Sample 3 has blue and gray shaded cells that a global threshold turns into solid ink, hiding the boxes on them, and sample 2 is a JPEG scan with uneven background. A local threshold treats shading as background because it is uniform within the block. The plan's Otsu comparison remains a step-5 task.
+Chosen: `AdaptiveThreshold(..., Gaussian, BinaryInv, block 31, C 15)`, so ink is 255 and paper is 0. Sample 3 has blue and gray shaded cells that a global threshold turns into solid ink, hiding the boxes on them, and sample 2 is a JPEG scan with uneven background. A local threshold treats shading as background because it is uniform within the block. The side-by-side Otsu comparison the plan listed for step 5 was not run beyond this observation.
 
 Cost: solid regions wider than the block become hollow in the binary image (their centers are "paper" relative to the local mean). That is harmless here because candidates come from the ruling mask (D3), but it is one reason solid-filled boxes are not detected (D10).
 
@@ -32,19 +32,19 @@ Cost: any enclosed rectangle of ruling is a candidate, so the filters in D4 carr
 
 ## D4. Candidate filters
 
-All thresholds live in `vision.Params` with a one-line reason each. The filters, in order, and the sample behavior that motivated them:
+All thresholds live in `vision.Params`; the reasons are recorded here. The filters, in order, and the sample behavior that motivated them:
 
 | Filter | Default | Motivation |
 | --- | --- | --- |
 | Interior at least `MinInteriorSide` | 10 px | Specks enclosed by thick rules. |
 | Rectangularity (contour area / bounding area) | 0.85 | Ragged or L-shaped holes. |
-| Outer side within `MinBoxSide..MaxBoxSide` | 20..120 px | Bowls of small text glyphs (o, a, d, 8) at 12-19 px; the smallest annotated checkbox is 23 px. |
+| Outer side within `MinBoxSide..MaxBoxSide` | 20..120 px | Bowls of small text glyphs (o, a, d, 8) at 12-19 px; the smallest annotated checkbox is 24x21 px. |
 | Outer aspect ratio | 1.25 | Table cells; the samples' nearest square cells sit at 1.3. |
 | Interior share of outer area `MinInteriorFraction` | 0.5 | Bowls of bold title glyphs: 22 px outer with 5-7 px strokes are one third interior; checkboxes are two thirds or more even when they share a rule. |
 
 Sizes are absolute pixels rather than fractions of image width because sample 2 is a crop of a page; width-relative sizing would misjudge its scale. The defaults cover roughly 100-300 DPI letter forms. Rejected alternative: a fixed interior aspect test, which fails on sample 1 where boxes share thick top and bottom rules and the visible interior is 53x42.
 
-Effect on the samples, boxes reported before and after the filters beyond size and aspect: sample 1 341 to 119, sample 2 62 to 41, sample 3 516 to 48, sample 4 164 to 77. Visual inspection of the overlays found no remaining glyph or sidebar false positives; the annotations in D11 later showed missed boxes, discussed in D12.
+Effect on the samples, boxes reported before and after the filters beyond size and aspect: sample 1 341 to 119, sample 2 62 to 41, sample 3 516 to 48, sample 4 164 to 77 (79 after the D12 change). Visual inspection of the overlays found no remaining glyph or sidebar false positives; the annotations in D11 later showed missed boxes, discussed in D12.
 
 ## D5. Classification: interior ink fraction
 
@@ -62,7 +62,7 @@ The reported box is the interior hole expanded by the ink thickness measured out
 
 ## D7. Resolution and limits
 
-Processing runs at native resolution. The largest sample is 10.7 MP and takes about 70 ms single-threaded (330 ms each with 12 concurrent requests on the development machine). Downscaling would speed this up but erases the 1-2 px strokes of sample 1's X marks. Memory is bounded by `MaxPixels` (25 MP, checked from the image header before decoding) and the 20 MiB body limit.
+Processing runs at native resolution. The largest sample is 10.7 MP and takes about 50 ms single-threaded (330 ms each with 12 concurrent requests on the development machine). Downscaling would speed this up but erases the 1-2 px strokes of sample 1's X marks. Memory is bounded by `MaxPixels` (25 MP, checked from the image header before decoding) and the 20 MiB body limit.
 
 ## D8. Validation and concurrency in the API
 
@@ -74,22 +74,31 @@ OpenCV calls cannot be interrupted, so the handler bounds concurrency with a sem
 
 Errors are `{"error": "message"}` with 400, 413, 415, 503, or 500; internal error details are logged, not returned. The success body is exactly `{"boxes":[{"bbox":[x1,y1,x2,y2],"is_checked":bool}]}` and `{"boxes":[]}` when nothing is found. With `?debug=1` (or `true`) each box gains a `debug` object with `fill_ratio`, `ink_pixels`, `interior_area`, and `border_px`; it is a pointer with `omitempty` so the default shape never carries the key.
 
-The frontend's `ApiService.readError` read a `message` field, so it was changed to read `error`; that is the only frontend change in this step.
+The frontend's `ApiService.readError` reads the same `error` field and shows it for 4xx responses.
 
-## D10. Known limitations recorded as `TODO(prod)`
+## D10. Known limitations and `TODO(prod)` follow-ups
+
+Detector limitations:
 
 - Boxes filled solid, or with dense horizontal/vertical hatching, have no rectangular hole and are missed (`TestDetectMissesSolidFill` documents this). No sample contains one.
 - Hand-drawn marks beside a box rather than inside it, such as the quadrilateral next to "Water, Other" in sample 2, are not checkboxes and are ignored.
 - Skewed or rotated scans reduce the straight-run mask; the supported skew range has not been measured yet.
 - Thresholds were set by inspecting the four samples and have not been evaluated on held-out documents.
 
+Production work deferred in code, each marked `TODO(prod)` where it applies (`git grep 'TODO(prod)'`):
+
+- Authentication and per-client rate limiting on `POST /detect` (`backend/internal/httpapi/handler.go`).
+- Persisting each input image (S3) and its result with the detector version (database) to build a held-out evaluation set, with encryption and a retention period because appraisal pages carry PII (`backend/internal/httpapi/handler.go`).
+- A confidence score per box, so fill ratios near `FillThreshold` go to human review instead of being forced to checked or unchecked (`backend/internal/vision/candidates.go`).
+- Frontend handling of a busy backend: 503 currently shows a generic "Server error"; it should say the server is busy and retry after `Retry-After` (`frontend/src/services/api.service.ts`).
+
 ## D11. Ground truth
 
 Options for defining the correct result of an image: compare against a stored copy of the detector's own output (a regression check, not a measure of accuracy); annotate every box by hand in an external tool; or correct a detector draft in a purpose-built editor.
 
-Chosen: the third. The correct result is a person's judgment under the mark classification policy in `docs/plan.md`, stored as `<image>.truth.json` in the `/detect` shape. The frontend's annotate mode seeds the draft from the detector and the annotator deletes false positives, flips states, and draws missed boxes, then saves the file. A draft always starts from a detection; the page does not reopen a saved file. Annotations exist for the four challenge samples.
+Chosen: the third. The correct result is a person's judgment under the mark classification policy in `docs/plan.md`, stored as `<image>.truth.json` in the `/detect` shape. The frontend's annotate mode seeds the draft from the detector and the annotator deletes false positives, flips states, and draws missed boxes, then saves the file. A draft starts from a detection, or empty when none has been run; the page does not reopen a saved file. Annotations exist for the four challenge samples.
 
-Cost and caveats: a draft biases the annotator toward the current detector. Boxes the detector misses are absent from the draft and must be looked for deliberately, and a false positive in the draft can survive review. The four challenge samples tuned the thresholds, so agreement on them is a regression signal rather than a measure of generalization. The numbers in D12 came from a scoring command (one-to-one matching at IoU 0.5) that was later removed to keep the submission focused; it remains in the Git history, and the annotate mode and annotations stay.
+Cost and caveats: a draft biases the annotator toward the current detector. Boxes the detector misses are absent from the draft and must be looked for deliberately, and a false positive in the draft can survive review. The four challenge samples tuned the thresholds, so agreement on them is a regression signal rather than a measure of generalization. The numbers in D12 came from a scoring command (`backend/cmd/eval`, one-to-one matching at IoU 0.5) that was later removed to keep the submission focused; it remains in the Git history before commit `22b53cc`, and the annotate mode and annotations stay. `TestDetectSamples` keeps the D12 result pinned: it matches detections to the annotations at the same IoU and fails on any false positive, wrong state, or new miss.
 
 ## D12. Changes driven by the annotations
 
@@ -101,4 +110,4 @@ Baseline against the annotations, scored at IoU 0.5: recall 0.986 (285 of 289) a
 
 Result: recall 0.993 (287 of 289) at precision 1.000, state accuracy 1.000 on all four samples.
 
-Known misses and false positives. Sample 2: the faint "Neighborhood Boundaries" box (border about 30 gray levels from paper, below `AdaptiveC`) and the hatched box, which has no clean rectangular hole.
+Known misses (there are no false positives), both in sample 2: the faint "Neighborhood Boundaries" box (border about 30 gray levels from paper, below `AdaptiveC`) and the hatched box, which has no clean rectangular hole.

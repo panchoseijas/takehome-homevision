@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"hash/crc32"
 	"image"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -235,54 +237,63 @@ func pngHeader(width, height int) []byte {
 	return buf.Bytes()
 }
 
-// TestDetectSamples is a smoke test over the supplied documents: the detector
-// must find boxes of both classes, keep them inside the image, and be
-// deterministic. Accuracy against annotations is measured separately.
+// TestDetectSamples checks the detector against the hand-made annotations
+// stored beside each sample (docs/decisions.md, D11). A detection matches an
+// annotated box at IoU 0.5. Every detection must match with the right state;
+// the only tolerated misses are the two known ones in sample 2 (D12).
 func TestDetectSamples(t *testing.T) {
 	samples := []struct {
-		file           string
-		wantBothStates bool
+		file       string
+		wantMissed int
 	}{
-		{"sample1-urar-page1.png", true},
-		{"sample2-neighborhood-site-crop.jpeg", true},
-		{"sample3-market-conditions-addendum.png", true},
-		{"sample4-manufactured-home-report.png", true},
+		{"sample1-urar-page1.png", 0},
+		{"sample2-neighborhood-site-crop.jpeg", 2},
+		{"sample3-market-conditions-addendum.png", 0},
+		{"sample4-manufactured-home-report.png", 0},
 	}
 	detector := NewDetector(DefaultParams())
 
 	for _, sample := range samples {
 		t.Run(sample.file, func(t *testing.T) {
-			data, err := os.ReadFile(filepath.Join("..", "..", "testdata", sample.file))
+			path := filepath.Join("..", "..", "testdata", sample.file)
+			data, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatal(err)
 			}
-			config, err := ValidateImage(data, DefaultParams().MaxPixels)
-			if err != nil {
-				t.Fatal(err)
-			}
-			bounds := image.Rect(0, 0, config.Width, config.Height)
+			truth := readTruth(t, strings.TrimSuffix(path, filepath.Ext(path))+".truth.json")
 
 			boxes, err := detector.Detect(t.Context(), data)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if len(boxes) < 10 {
-				t.Fatalf("got %d boxes, want a form's worth", len(boxes))
+
+			matched := make([]bool, len(truth))
+			for _, box := range boxes {
+				best, bestIoU := -1, 0.5
+				for i, want := range truth {
+					if overlap := iou(box, want); !matched[i] && overlap >= bestIoU {
+						best, bestIoU = i, overlap
+					}
+				}
+				if best < 0 {
+					t.Errorf("box %v matches no annotation", box.Rect())
+					continue
+				}
+				matched[best] = true
+				if box.Checked != truth[best].Checked {
+					t.Errorf("box %v checked = %t, annotation says %t", box.Rect(), box.Checked, truth[best].Checked)
+				}
 			}
 
-			checked, unchecked := 0, 0
-			for _, box := range boxes {
-				if !box.Rect().In(bounds) {
-					t.Errorf("box %v exceeds %v", box.Rect(), bounds)
-				}
-				if box.Checked {
-					checked++
-				} else {
-					unchecked++
+			missed := 0
+			for i, ok := range matched {
+				if !ok {
+					missed++
+					t.Logf("missed annotation %v", truth[i].Rect())
 				}
 			}
-			if sample.wantBothStates && (checked == 0 || unchecked == 0) {
-				t.Errorf("checked = %d, unchecked = %d, want both", checked, unchecked)
+			if missed != sample.wantMissed {
+				t.Errorf("missed %d of %d annotations, want %d", missed, len(truth), sample.wantMissed)
 			}
 
 			again, err := detector.Detect(t.Context(), data)
@@ -292,7 +303,29 @@ func TestDetectSamples(t *testing.T) {
 			if !reflect.DeepEqual(boxes, again) {
 				t.Error("detection is not deterministic across runs")
 			}
-			t.Logf("%d boxes (%d checked, %d unchecked)", len(boxes), checked, unchecked)
 		})
 	}
+}
+
+// readTruth loads an annotation file, which has the /detect response shape.
+func readTruth(t *testing.T, path string) []Box {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var file struct {
+		Boxes []struct {
+			BBox    [4]int `json:"bbox"`
+			Checked bool   `json:"is_checked"`
+		} `json:"boxes"`
+	}
+	if err := json.Unmarshal(data, &file); err != nil {
+		t.Fatal(err)
+	}
+	boxes := make([]Box, len(file.Boxes))
+	for i, b := range file.Boxes {
+		boxes[i] = Box{X1: b.BBox[0], Y1: b.BBox[1], X2: b.BBox[2], Y2: b.BBox[3], Checked: b.Checked}
+	}
+	return boxes
 }

@@ -1,5 +1,13 @@
 # Checkbox detection build plan
 
+> **Status: historical.** This is the plan written before any code existed, kept unedited below as a record of the intended approach and because `decisions.md` refers to its mark classification policy. The build is finished; the READMEs and [decisions.md](decisions.md) describe the project as it is. Where the result differs from the plan:
+>
+> - `GET /healthz`, the frontend's connection state, and the `/healthz` proxy were removed as unused. `POST /detect` is the only endpoint.
+> - `?debug=1` exists in the API and in `cmd/detect -debug`, but the frontend does not request it; hovering a box shows its state and `bbox`.
+> - The step-5 evaluator (`backend/cmd/eval`) was built, used for the numbers in decisions.md D12, and then removed; `TestDetectSamples` now pins that result against the annotations. The global-versus-adaptive threshold comparison and the skew probe were not run (D2, D10).
+> - The frontend gained an annotate mode for producing the ground-truth files (D11), and Docker Compose became the primary run path for both services, not only the backend.
+> - The "Current structure" tree shows the starting skeleton; see `backend/README.md` for the current layout.
+
 The project will use a monorepo with a React + Vite + TypeScript frontend and a Go backend. The initial detector will use classical computer vision through GoCV/OpenCV. This document describes future work; the repository currently contains the directory skeleton, the four sample images under `backend/testdata/`, and this plan.
 
 ## Requirements and scope

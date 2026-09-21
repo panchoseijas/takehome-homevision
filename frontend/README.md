@@ -29,7 +29,7 @@ The document is the page. A toolbar sits above a stage that holds nothing but th
 - **Expand** grows the workspace to fill the window for a closer read, and `Esc` or **Restore** brings the page back.
 - **Annotate** turns the drawn boxes into an editable ground-truth draft; see below.
 
-A rejected file (not PNG/JPEG, empty, over 10 MB, or several at once) reports the reason and leaves the open document and its boxes untouched.
+A rejected file (not PNG/JPEG, empty, over 10 MiB, or several at once) reports the reason and leaves the open document and its boxes untouched.
 
 ## Detection overlay
 
@@ -39,13 +39,13 @@ The overlay is an SVG whose `viewBox` is the image's pixel grid, so `bbox` coord
 
 ## Annotate mode
 
-Annotate mode records the correct result for an image: every checkbox and its state, as judged by a person. Press **Annotate** and the detector's boxes become an editable draft. Then correct it:
+Annotate mode records the correct result for an image: every checkbox and its state, as judged by a person. Press **Annotate** and the detector's boxes become an editable draft (without a detection the draft starts empty). Then correct it:
 
 - click a box to select it; `C` or Space toggles checked, Delete removes it, Escape deselects;
 - drag on the document to add a box the detector missed; to fix a misplaced one, delete it and draw it again;
 - use 2× or 4× zoom on full pages, and look for checkboxes with no rectangle on them, since a draft can never contain the detector's own misses.
 
-"Save" downloads `<image name>.truth.json`, the `/detect` response shape; move it beside the image in `backend/testdata`, where the four samples already have one. A saved file cannot be reopened in the page: a draft always starts from the detector, so correcting an existing annotation means editing the JSON by hand. Leaving the page with unsaved edits asks for confirmation, as does replacing them with a fresh detection; a detection on its own is never treated as unsaved work, since it can be re-run.
+"Save" downloads `<image name>.truth.json`, the `/detect` response shape; move it beside the image in `backend/testdata`, where the four samples already have one. A saved file cannot be reopened in the page: a draft starts from the detector's result or from nothing, so correcting an existing annotation means editing the JSON by hand. Leaving the page with unsaved edits asks for confirmation, as does replacing them with a fresh detection; a detection on its own is never treated as unsaved work, since it can be re-run.
 
 Annotating is a mode of the one page rather than a separate route: the same image, zoom, and boxes stay on screen when it is turned on, so there is no second upload and nothing to re-align.
 
@@ -59,8 +59,8 @@ The boxes and their edits live in `src/useAnnotations.ts`, a hook that owns the 
 
 - `POST /detect`, multipart form data with one file named `image`.
 - Expects a JSON success response (for example `{"boxes":[]}`), or HTTP 204 without a body.
-- Non-2xx responses display the HTTP status. Network errors and malformed responses display errors.
-- The frontend accepts PNG/JPEG up to 10 MiB. This is a client usability limit, not server validation; the future server must validate input independently.
+- 4xx responses display the backend's `error` message, or the HTTP status when the body has none. 5xx responses, including 503 when the backend is busy, display "Server error". Network errors and malformed responses display errors.
+- The frontend accepts PNG/JPEG up to 10 MiB. This is a client usability limit, not server validation; the backend validates input independently and accepts up to 20 MiB.
 - Selecting another file clears the response. Requests do not automatically retry.
 
 Vite proxies `/detect` to `http://localhost:8080` in development and preview. To change this, copy `.env.example` to `.env.local`, set `API_PROXY_TARGET`, and restart Vite. Set `VITE_API_BASE_URL` to use an absolute API origin. An absolute URL requires the server to allow the frontend origin through CORS. Production hosting must route `/detect` to the API, or set the API base URL at build time.

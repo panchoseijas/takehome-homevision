@@ -23,20 +23,18 @@ import (
 
 // fakeDetector returns canned results and records what it received.
 type fakeDetector struct {
-	boxes   []vision.Box
-	err     error
-	block   chan struct{} // when set, Detect waits until closed
-	mu      sync.Mutex
-	inputs  [][]byte
-	calls   int
-	lastCtx context.Context
+	boxes  []vision.Box
+	err    error
+	block  chan struct{} // when set, Detect waits until closed
+	mu     sync.Mutex
+	inputs [][]byte
+	calls  int
 }
 
 func (f *fakeDetector) Detect(ctx context.Context, data []byte) ([]vision.Box, error) {
 	f.mu.Lock()
 	f.calls++
 	f.inputs = append(f.inputs, data)
-	f.lastCtx = ctx
 	f.mu.Unlock()
 	if f.block != nil {
 		select {
