@@ -2,6 +2,8 @@
 
 Detect and annotate checkboxes in document images with a React frontend and a Go/OpenCV backend.
 
+See [Approach and tradeoffs](docs/approach.md) for a brief writeup of the architectural decisions and validation approach.
+
 ## Overview
 
 Appraisal reports record many of their answers as checkboxes, so reading a scanned form automatically starts with finding each box and telling whether it is marked. HomeVision does that for a PNG or JPEG page: `POST /detect` returns every checkbox as a pixel `bbox` with an `is_checked` flag, and the web app draws the result over the image so it can be verified at a glance.
@@ -77,5 +79,6 @@ Against the hand-made annotations of the four samples, the detector finds 287 of
 - **Solid or densely hatched fills are missed** for the same reason: without a hole there is no candidate (`TestDetectMissesSolidFill` documents this). No sample contains one.
 - **Skew and rotation are untested.** Tilted scans shorten the straight runs the ruling mask depends on; the supported range has not been measured.
 - **Tuned on the four samples.** The thresholds were set by inspecting them, so agreement there is a regression check, not evidence of accuracy on unseen documents. Box sizes are absolute pixels and cover roughly 100-300 DPI letter pages.
+- **Production controls are deferred.** Authentication, per-client rate limiting, and confidence-based review are not implemented.
 
 See [backend/README.md](backend/README.md) and [frontend/README.md](frontend/README.md) for the API, local development, and tests.
