@@ -2,21 +2,15 @@
 
 Detect and annotate checkboxes in document images with a React frontend and a Python/OpenCV backend.
 
-See [Approach and tradeoffs](docs/approach.md) for a brief writeup of the architectural decisions and validation approach.
+Appraisal reports record many of their answers as checkboxes, so reading a scanned form starts with finding each box and telling whether it is marked. Given a PNG or JPEG page, `POST /detect` returns every checkbox as a pixel `bbox` with an `is_checked` flag, and the web app draws the result over the image so you can check it by eye.
 
-## Overview
+Detection is classical computer vision with OpenCV rather than a trained model. It is deterministic, runs quickly on a CPU, and every decision comes from a named threshold in [`params.py`](backend/src/homevision/vision/params.py). The four supplied samples are hand-annotated, and the test suite fails on any wrong or spurious box. It finds 287 of 289 checkboxes; the two misses are described under [known limitations](#known-limitations).
 
-Appraisal reports record many of their answers as checkboxes, so reading a scanned form automatically starts with finding each box and telling whether it is marked. HomeVision does that for a PNG or JPEG page: `POST /detect` returns every checkbox as a pixel `bbox` with an `is_checked` flag, and the web app draws the result over the image so it can be verified at a glance.
-
-- **No trained model.** Detection is classical computer vision, so it is deterministic, fast on a CPU, and every decision traces back to a named threshold ([how it works](#how-detection-works)).
-- **Measured, not eyeballed.** The four supplied samples are hand-annotated, and the test suite fails on any wrong or spurious box; the only misses are two known ones in sample 2 ([known limitations](#known-limitations)).
-- **Easy to evaluate.** Try the live demo below, or start both services with one Docker command.
+[approach.md](approach.md) covers the architectural decisions and how the detector was validated. [backend/README.md](backend/README.md) and [frontend/README.md](frontend/README.md) cover the API, local development, and tests.
 
 ## Live demo
 
-No installation needed:
-
-- App: [https://homevision.jfseijas.com.ar](https://homevision.jfseijas.com.ar). Upload a PNG or JPEG (the samples are in `[backend/testdata](backend/testdata)`) and click **Detect checkboxes**.
+- App: [https://homevision.jfseijas.com.ar](https://homevision.jfseijas.com.ar). Upload a PNG or JPEG (the samples are in [`backend/testdata`](backend/testdata)) and click **Detect checkboxes**.
 - API: [https://api.homevision.jfseijas.com.ar](https://api.homevision.jfseijas.com.ar)
 
 ```sh
@@ -31,9 +25,9 @@ Install Docker with Compose (Docker Desktop includes both), then run from this d
 docker compose up --build
 ```
 
-Open [http://localhost:5173](http://localhost:5173), choose an image from `backend/testdata`, and click **Detect checkboxes**. The API is also available at [http://localhost:8080](http://localhost:8080).
+Open [http://localhost:5173](http://localhost:5173), choose an image from `backend/testdata`, and click **Detect checkboxes**. The API is at [http://localhost:8080](http://localhost:8080).
 
-The first build takes a couple of minutes; later builds reuse Docker's cache. Stop with Ctrl+C, then remove the containers with:
+Stop with Ctrl+C, then remove the containers with:
 
 ```sh
 docker compose down
@@ -41,7 +35,7 @@ docker compose down
 
 ## How detection works
 
-The detector is classical computer vision with OpenCV, with no trained model. A checkbox is a small, nearly square hole enclosed by straight lines, and each step narrows the image down to that. The images below are a crop of `backend/testdata/sample1-urar-page1.png`.
+A checkbox is a small, nearly square hole enclosed by straight lines, and each step narrows the image down to that. The images below are a crop of `backend/testdata/sample1-urar-page1.png`.
 
 **1. Grayscale.** The upload is validated and decoded to a single channel.
 
@@ -51,7 +45,7 @@ The detector is classical computer vision with OpenCV, with no trained model. A 
 
 ![Thresholded ink](docs/pipeline/2-threshold.png)
 
-**3. Ruling mask.** Morphological opening with a thin horizontal and a thin vertical kernel keeps only straight runs of at least 12 px. Box borders and table rules survive; text and the diagonal strokes of the X marks fall apart.
+**3. Ruling mask.** Morphological opening with a thin horizontal and a thin vertical kernel keeps only straight runs of at least 12 px. Box borders and table rules survive; text and the diagonal strokes of the X marks do not.
 
 ![Ruling mask](docs/pipeline/3-ruling.png)
 
@@ -59,7 +53,7 @@ The detector is classical computer vision with OpenCV, with no trained model. A 
 
 ![Contour hierarchy](docs/pipeline/contour-hierarchy.png)
 
-In the figure, blue contours are outermost and green ones are nested inside another. The empty interior of a box is always a hole in its border, like 5, 7, 3 and 2, while a solid square like 0 has no hole and can never be a checkbox. The detector uses `RETR_CCOMP`, which flattens the tree to two levels, so the outside of a nested shape (6) counts as top level and only holes have a parent. Keeping contours with a parent is what selects the interiors.
+In the figure, blue contours are outermost and green ones are nested inside another. The empty interior of a box is always a hole in its border, like 5, 7, 3 and 2, while a solid square like 0 has no hole and can never be a checkbox. The detector uses `RETR_CCOMP`, which flattens the tree to two levels, so the outside of a nested shape (6) counts as top level and only holes have a parent. Keeping the contours that have a parent selects the interiors.
 
 Holes are then filtered by size, squareness, rectangularity, and border thickness. Green holes pass; red ones, such as table cells and letter fragments, are rejected:
 
@@ -69,16 +63,12 @@ Holes are then filtered by size, squareness, rectangularity, and border thicknes
 
 ![Detected boxes](docs/pipeline/5-result.png)
 
-Every threshold lives in `[backend/src/homevision/vision/params.py](backend/src/homevision/vision/params.py)`.
-
 ## Known limitations
 
-Against the hand-made annotations of the four samples, the detector finds 287 of 289 checkboxes at IoU 0.5 with no false positives and every state correct. Beyond that:
+Against the hand-made annotations of the four samples, the detector finds 287 of 289 checkboxes at IoU 0.5 with no false positives and every state correct.
 
-- **Two misses in sample 2.** The "Neighborhood Boundaries" box is too faint for the adaptive threshold (its border is about 30 gray levels from the paper), and the hatched box has no clean rectangular hole.
-- **Solid or densely hatched fills are missed** for the same reason: without a hole there is no candidate (`test_misses_solid_fill` documents this). No sample contains one.
-- **Skew and rotation are untested.** Tilted scans shorten the straight runs the ruling mask depends on; the supported range has not been measured.
-- **Tuned on the four samples.** The thresholds were set by inspecting them, so agreement there is a regression check, not evidence of accuracy on unseen documents. Box sizes are absolute pixels and cover roughly 100-300 DPI letter pages.
-- **Production controls are deferred.** Authentication, per-client rate limiting, and confidence-based review are not implemented.
-
-See [backend/README.md](backend/README.md) and [frontend/README.md](frontend/README.md) for the API, local development, and tests.
+- Both misses are in sample 2. The "Neighborhood Boundaries" box is too faint for the adaptive threshold (its border is about 30 gray levels from the paper), and the hatched box has no clean rectangular hole.
+- Solid or densely hatched fills are missed for the same reason: without a hole there is no candidate (`test_misses_solid_fill` documents this). No sample contains one.
+- Skew and rotation are untested. Tilted scans shorten the straight runs the ruling mask depends on, and the supported range has not been measured.
+- The thresholds were set by inspecting the four samples, so agreement there is a regression check, not evidence of accuracy on unseen documents. Box sizes are absolute pixels and cover roughly 100-300 DPI letter pages.
+- Authentication, per-client rate limiting, and confidence-based review are not implemented.
