@@ -15,7 +15,6 @@ def find_candidates(ink: MatLike, ruling: MatLike, params: Params) -> list[Box]:
     checked when enough ink falls inside it.
     """
     # RETR_CCOMP yields two levels: outer boundaries and the holes inside them.
-    # A mask with no contours returns hierarchy=None, but the loop never runs.
     contours, hierarchy = cv2.findContours(ruling, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
 
     candidates: list[Box] = []
