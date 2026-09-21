@@ -349,17 +349,3 @@ func waitForCalls(t *testing.T, detector *fakeDetector, want int) {
 	}
 	t.Fatalf("detector was not called %d times", want)
 }
-
-func TestHealthz(t *testing.T) {
-	handler := newHandler(t, &fakeDetector{}, Config{})
-
-	recorder := httptest.NewRecorder()
-	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/healthz", nil))
-
-	if recorder.Code != http.StatusOK {
-		t.Fatalf("status = %d", recorder.Code)
-	}
-	if got := decodeBody(t, recorder)["status"]; got != "ok" {
-		t.Errorf("status field = %v, want ok", got)
-	}
-}

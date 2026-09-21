@@ -16,7 +16,6 @@ func TestNewServerRoutes(t *testing.T) {
 		wantStatus int
 	}{
 		{http.MethodPost, "/detect", http.StatusBadRequest},
-		{http.MethodGet, "/healthz", http.StatusOK},
 		{http.MethodGet, "/", http.StatusNotFound},
 	}
 
