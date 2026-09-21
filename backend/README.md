@@ -1,6 +1,6 @@
 # HomeVision backend
 
-Go HTTP API that detects checkboxes in a document image and reports whether each one is checked. Detection is classical computer vision through GoCV/OpenCV; see `../docs/decisions.md` for the reasoning behind each step.
+Go HTTP API that detects checkboxes in a document image and reports whether each one is checked. Detection is classical computer vision through GoCV/OpenCV; the [root README](../README.md#how-detection-works) walks through each step.
 
 ## Prerequisites
 
@@ -92,7 +92,7 @@ Green rectangles are checked boxes, red are unchecked. Detection time and box co
 - `cmd/server`: HTTP server assembly, flags, graceful shutdown.
 - `cmd/detect`: command-line runner and overlay writer.
 - `internal/httpapi`: upload validation, limits, JSON contract.
-- `internal/vision`: the detector. `params.go` holds every tunable (rationale in `../docs/decisions.md`, D2-D6); `detector.go` is the pipeline; `candidates.go` filters and classifies; `boxes.go` clamps, deduplicates, and sorts.
+- `internal/vision`: the detector. `params.go` holds every tunable; `detector.go` is the pipeline; `candidates.go` filters and classifies; `boxes.go` clamps, deduplicates, and sorts.
 - `testdata`: the four sample documents from the challenge.
 
-Tests draw synthetic forms with OpenCV to cover marks, box sizes, table grids, shading, heavy rules, nested borders, ordering, and invalid input, and check the four samples against their hand-made annotations (`testdata/*.truth.json`): every detection must match an annotated box at IoU 0.5 with the right state, and only the two known misses in sample 2 are tolerated. Production follow-ups are marked `TODO(prod)` in the code (`git grep 'TODO(prod)'`); the detector's known limitations are listed in `../docs/decisions.md` (D10).
+Tests draw synthetic forms with OpenCV to cover marks, box sizes, table grids, shading, heavy rules, nested borders, ordering, and invalid input, and check the four samples against their hand-made annotations (`testdata/*.truth.json`): every detection must match an annotated box at IoU 0.5 with the right state, and only the two known misses in sample 2 are tolerated. Production follow-ups are marked `TODO(prod)` in the code (`git grep 'TODO(prod)'`); the detector's known limitations are listed in the [root README](../README.md#known-limitations).

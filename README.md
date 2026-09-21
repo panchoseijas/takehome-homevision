@@ -2,12 +2,20 @@
 
 Detect and annotate checkboxes in document images with a React frontend and a Go/OpenCV backend.
 
+## Overview
+
+Appraisal reports record many of their answers as checkboxes, so reading a scanned form automatically starts with finding each box and telling whether it is marked. HomeVision does that for a PNG or JPEG page: `POST /detect` returns every checkbox as a pixel `bbox` with an `is_checked` flag, and the web app draws the result over the image so it can be verified at a glance.
+
+- **No trained model.** Detection is classical computer vision, so it is deterministic, fast on a CPU, and every decision traces back to a named threshold ([how it works](#how-detection-works)).
+- **Measured, not eyeballed.** The four supplied samples are hand-annotated, and the test suite fails on any wrong or spurious box; the only misses are two known ones in sample 2 ([known limitations](#known-limitations)).
+- **Easy to evaluate.** Try the live demo below, or start both services with one Docker command.
+
 ## Live demo
 
 No installation needed:
 
-- App: https://homevision.jfseijas.com.ar. Upload a PNG or JPEG (the samples are in [`backend/testdata`](backend/testdata)) and click **Detect checkboxes**.
-- API: https://api.homevision.jfseijas.com.ar
+- App: [https://homevision.jfseijas.com.ar](https://homevision.jfseijas.com.ar). Upload a PNG or JPEG (the samples are in `[backend/testdata](backend/testdata)`) and click **Detect checkboxes**.
+- API: [https://api.homevision.jfseijas.com.ar](https://api.homevision.jfseijas.com.ar)
 
 ```sh
 curl -F image=@backend/testdata/sample1-urar-page1.png https://api.homevision.jfseijas.com.ar/detect
@@ -21,17 +29,13 @@ Install Docker with Compose (Docker Desktop includes both), then run from this d
 docker compose up --build
 ```
 
-Open http://localhost:5173, choose an image from `backend/testdata`, and click **Detect checkboxes**. The API is also available at http://localhost:8080.
+Open [http://localhost:5173](http://localhost:5173), choose an image from `backend/testdata`, and click **Detect checkboxes**. The API is also available at [http://localhost:8080](http://localhost:8080).
 
-Compose starts two containers: `backend` builds the Go server using a prebuilt OpenCV image, then copies the binary and required shared libraries into Debian slim; `frontend` builds the static files with Node, then serves them with Nginx and forwards `/detect` requests to `http://backend:8080` over Compose's default network. Only Docker is needed locally. The first build downloads dependencies and compiles GoCV, so it can take several minutes; later builds reuse Docker's cache.
-
-Docker serves the production frontend build. For live reload during local development, use `npm run dev` in `frontend` instead. After editing source files, rerun the Compose command to rebuild. Stop with Ctrl+C, then remove the containers with:
+The first build takes a couple of minutes; later builds reuse Docker's cache. Stop with Ctrl+C, then remove the containers with:
 
 ```sh
 docker compose down
 ```
-
-The backend uses `linux/amd64` because the upstream ARM OpenCV image crashed during detection on Apple Silicon. Docker Desktop runs it through emulation on those Macs, which makes it slower than a native build.
 
 ## How detection works
 
@@ -63,6 +67,15 @@ Holes are then filtered by size, squareness, rectangularity, and border thicknes
 
 ![Detected boxes](docs/pipeline/5-result.png)
 
-Every threshold lives in [`backend/internal/vision/params.go`](backend/internal/vision/params.go), and [docs/decisions.md](docs/decisions.md) covers the rationale behind each value and the tradeoffs.
+Every threshold lives in `[backend/internal/vision/params.go](backend/internal/vision/params.go)`.
+
+## Known limitations
+
+Against the hand-made annotations of the four samples, the detector finds 287 of 289 checkboxes at IoU 0.5 with no false positives and every state correct. Beyond that:
+
+- **Two misses in sample 2.** The "Neighborhood Boundaries" box is too faint for the adaptive threshold (its border is about 30 gray levels from the paper), and the hatched box has no clean rectangular hole.
+- **Solid or densely hatched fills are missed** for the same reason: without a hole there is no candidate (`TestDetectMissesSolidFill` documents this). No sample contains one.
+- **Skew and rotation are untested.** Tilted scans shorten the straight runs the ruling mask depends on; the supported range has not been measured.
+- **Tuned on the four samples.** The thresholds were set by inspecting them, so agreement there is a regression check, not evidence of accuracy on unseen documents. Box sizes are absolute pixels and cover roughly 100-300 DPI letter pages.
 
 See [backend/README.md](backend/README.md) and [frontend/README.md](frontend/README.md) for the API, local development, and tests.
