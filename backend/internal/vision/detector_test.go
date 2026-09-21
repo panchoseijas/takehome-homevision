@@ -238,9 +238,9 @@ func pngHeader(width, height int) []byte {
 }
 
 // TestDetectSamples checks the detector against the hand-made annotations
-// stored beside each sample (docs/decisions.md, D11). A detection matches an
-// annotated box at IoU 0.5. Every detection must match with the right state;
-// the only tolerated misses are the two known ones in sample 2 (D12).
+// stored beside each sample. A detection matches an annotated box at IoU 0.5.
+// Every detection must match with the right state; the only tolerated misses
+// are the two known ones in sample 2.
 func TestDetectSamples(t *testing.T) {
 	samples := []struct {
 		file       string

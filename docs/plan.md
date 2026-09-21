@@ -1,11 +1,10 @@
 # Checkbox detection build plan
 
-> **Status: historical.** This is the plan written before any code existed, kept unedited below as a record of the intended approach and because `decisions.md` refers to its mark classification policy. The build is finished; the READMEs and [decisions.md](decisions.md) describe the project as it is. Where the result differs from the plan:
+> **Status: historical.** This is the plan written before any code existed, kept as a record of the intended approach and because the annotations follow its mark classification policy. Items that were planned but never built have been removed; the rest is as originally written. The build is finished; the READMEs describe the project as it is. Where the result differs from the plan:
 >
-> - `GET /healthz`, the frontend's connection state, and the `/healthz` proxy were removed as unused. `POST /detect` is the only endpoint.
 > - `?debug=1` exists in the API and in `cmd/detect -debug`, but the frontend does not request it; hovering a box shows its state and `bbox`.
-> - The step-5 evaluator (`backend/cmd/eval`) was built, used for the numbers in decisions.md D12, and then removed; `TestDetectSamples` now pins that result against the annotations. The global-versus-adaptive threshold comparison and the skew probe were not run (D2, D10).
-> - The frontend gained an annotate mode for producing the ground-truth files (D11), and Docker Compose became the primary run path for both services, not only the backend.
+> - The step-5 evaluator (`backend/cmd/eval`) was built, used to measure the results in the README's known limitations, and then removed; `TestDetectSamples` now pins that result against the annotations.
+> - The frontend gained an annotate mode for producing the ground-truth files, and Docker Compose became the primary run path for both services, not only the backend.
 > - The "Current structure" tree shows the starting skeleton; see `backend/README.md` for the current layout.
 
 The project will use a monorepo with a React + Vite + TypeScript frontend and a Go backend. The initial detector will use classical computer vision through GoCV/OpenCV. This document describes future work; the repository currently contains the directory skeleton, the four sample images under `backend/testdata/`, and this plan.
@@ -66,7 +65,6 @@ Suggested API assumptions to document before implementation:
 - Integer coordinates use the original decoded image dimensions, origin at the top-left; propose exclusive right/bottom edges and document that convention. Any resize or rotation inside the detector must be mapped back to this coordinate system.
 - Define and test request-byte, decoded-pixel, concurrency, and timeout limits. Return clear JSON errors for missing, malformed, unsupported, or oversized input.
 - Return exactly the specified success shape by default. With the opt-in query parameter `?debug=1`, each box additionally carries a `debug` object with per-box diagnostics (for example the interior fill score and the candidate source). The default response never includes it; test both shapes.
-- Expose `GET /healthz` returning `200` with `{"status":"ok"}`. Use it for the container health check and for the frontend's connection state.
 
 PDF upload, OCR, learned models, authentication, persistence, background jobs, and cloud infrastructure are outside the initial scope. The supplied PDF is the source of test images, not a new input format requirement.
 
@@ -114,7 +112,7 @@ Keep preprocessing, candidate detection, and classification understandable and t
 ### 3. Expose the Go HTTP API
 
 - Use Go's HTTP facilities for the single required endpoint and keep transport code separate from detection.
-- Implement the documented upload contract, decoding checks, bounded processing, errors, the exact success response, the `?debug=1` variant, and `GET /healthz`.
+- Implement the documented upload contract, decoding checks, bounded processing, errors, the exact success response, and the `?debug=1` variant.
 - Ensure native OpenCV image resources are released on all paths. Avoid shared mutable image buffers between requests.
 - Exercise `POST /detect` independently with curl before connecting the frontend.
 
@@ -123,9 +121,8 @@ Keep preprocessing, candidate detection, and classification understandable and t
 - Provide an image upload control and a detect action with loading, error, and empty-result states.
 - Show the original image with checked/unchecked bounding-box overlays, a legend, and counts. Include zoom or another practical way to inspect the small boxes in full-page documents.
 - Preserve overlay alignment while resizing the display; distinguish states through labels or styling as well as color.
-- Make the exact response JSON available to inspect or download. Reset stale results when the input image changes.
-- Request `?debug=1` from the inspector and show per-box diagnostics on hover or selection. Use `GET /healthz` to show backend connection state.
-- Run the frontend separately through Vite and proxy `/detect` and `/healthz` requests to the Go backend for development and local review.
+- Make the exact response JSON available to inspect. Reset stale results when the input image changes.
+- Run the frontend separately through Vite and proxy `/detect` requests to the Go backend for development and local review.
 
 The frontend's purpose is to make correctness easy to review. At the end of this step the full upload → detection → overlay → JSON flow works, whatever the detector's accuracy.
 
@@ -134,13 +131,13 @@ The frontend's purpose is to make correctness easy to review. At the end of this
 - Manually annotate checkbox bounds and states for the four samples following the mark classification policy above. Include ordinary table cells and text as negative examples.
 - Add a reproducible evaluator with one-to-one matching at a documented intersection-over-union threshold, initially 0.5. Report localization precision/recall, classification accuracy for matched boxes, and correctly localized/classified detections. Report per-image results and runtime.
 - Keep calibration and evaluation distinct where the four-image sample allows. Do not present performance on tuned examples or their synthetic variants as evidence of generalization to unseen documents.
-- Compare global and adaptive thresholding on the samples. Avoid aggressive downscaling that erases small boxes or faint marks. Filter text and ordinary table cells, then merge duplicate detections from nested boundaries or multiple processing passes. Inspect failures involving faint strokes and shaded cells before adding rules; preserve enough interior area to classify small boxes reliably.
+- Avoid aggressive downscaling that erases small boxes or faint marks. Filter text and ordinary table cells, then merge duplicate detections from nested boundaries or multiple processing passes. Inspect failures involving faint strokes and shaded cells before adding rules; preserve enough interior area to classify small boxes reliably.
 - The samples contain dense form grids, checkboxes touching table lines, blue shading, handwriting, and a colored watermark. These make simple square-contour and dark-pixel heuristics fallible. Evaluate each added rule against all examples. If table-line suppression is needed, compare candidates before and after suppression, validate their borders against the original, and preserve an unmodified image for mark classification. Consider line-based candidate recovery only if measured misses justify it.
 
 ### 6. Verify, document, and package
 
-- Test the detector on all four annotated images and targeted synthetic cases: blank/text-only images, checked/unchecked boxes, duplicate contours, table intersections, changes in scale, shading, and noise. Probe skew to establish and document the supported range.
-- Test the HTTP contract, empty detections, malformed uploads, unsupported types, request limits, decoded-image limits, coordinate mapping, the default response having no `debug` fields, the `?debug=1` variant, `GET /healthz`, and frontend-to-backend proxy routing.
+- Test the detector on all four annotated images and targeted synthetic cases: blank/text-only images, checked/unchecked boxes, duplicate contours, table intersections, changes in scale, and shading.
+- Test the HTTP contract, empty detections, malformed uploads, unsupported types, request limits, decoded-image limits, coordinate mapping, the default response having no `debug` fields, the `?debug=1` variant, and frontend-to-backend proxy routing.
 - Exercise the actual upload → detection → overlay → JSON flow, including backend failure and replacement of the uploaded image.
 - Run formatting, static checks, frontend type checking/linting/build, Go tests/vet, and any configured integration tests. Confirm concurrent requests do not corrupt results or exhaust native resources within the documented limits.
 - Write a root README with prerequisites, exact build/run/test commands for the frontend and backend, their ports and proxy configuration, curl examples, supported inputs, and a short usage walkthrough. Record measured results, approach, dependency tradeoffs, observed limitations, and the list of `TODO(prod)` items in a concise writeup.
